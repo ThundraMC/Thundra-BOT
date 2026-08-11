@@ -229,12 +229,10 @@ function isRepeatedCharacterSpam(text) {
     return false;
   }
 
-  // HIIIIIIIIIIII
   if (/(.)\1{7,}/us.test(compact)) {
     return true;
   }
 
-  // 😀😀😀😀😀😀😀😀😀
   const chars = Array.from(compact);
 
   if (chars.length >= 12) {
@@ -262,11 +260,6 @@ function isRepeatedPatternSpam(text) {
   if (compact.length < 12) {
     return false;
   }
-
-  // Detect things like:
-  // HIHIHIHIHIHI
-  // LOLLOLLOLLOL
-  // ABCABCABCABC
 
   for (let size = 1; size <= 4; size++) {
     if (compact.length < size * 4) {
@@ -476,7 +469,6 @@ client.once("ready", async () => {
   }).setToken(process.env.TOKEN);
 
   try {
-    // Remove global commands
     await rest.put(
       Routes.applicationCommands(client.user.id),
       {
@@ -484,7 +476,6 @@ client.once("ready", async () => {
       }
     );
 
-    // Register server commands
     await rest.put(
       Routes.applicationGuildCommands(
         client.user.id,
@@ -531,6 +522,30 @@ client.on("messageCreate", async message => {
   const content = message.content || "";
 
   // ====================
+  // CORTISOL GIF
+  // ====================
+
+  const lowercaseContent = content.toLowerCase();
+
+  const asksAboutCortisol =
+    lowercaseContent.includes("cortisol") &&
+    (
+      lowercaseContent.includes("server") ||
+      lowercaseContent.includes("play") ||
+      lowercaseContent.includes("playing") ||
+      lowercaseContent.includes("game") ||
+      lowercaseContent.includes("gaming")
+    );
+
+  if (asksAboutCortisol) {
+    await message.reply(
+      "https://klipy.com/gifs/low-cortisol-level"
+    );
+
+    return;
+  }
+
+  // ====================
   // REMOVE AFK WHEN THEY TALK
   // ====================
 
@@ -566,7 +581,6 @@ client.on("messageCreate", async message => {
           member || afk.user
         );
 
-        // Only the person who pinged them gets the AFK message
         try {
           await message.author.send(
             name +
@@ -574,15 +588,12 @@ client.on("messageCreate", async message => {
             afk.reason
           );
         } catch (error) {
-          // If DMs are closed, send it in the channel
-          // as a fallback.
           await message.channel.send(
             name +
             " is AFK: " +
             afk.reason
           );
         }
-
       } catch (error) {
         console.log(
           "Couldn't send AFK response."
@@ -1044,7 +1055,6 @@ client.on(
         }
       );
 
-      // Only the person using /afk sees this
       await interaction.reply({
         content:
           "You are now AFK: " +
@@ -1052,7 +1062,6 @@ client.on(
         ephemeral: true
       });
 
-      // Everyone sees this
       await interaction.channel.send(
         name +
         " is now AFK."
@@ -1537,4 +1546,3 @@ if (!process.env.TOKEN) {
 client.login(
   process.env.TOKEN
 );
-          
