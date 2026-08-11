@@ -9,10 +9,6 @@ const {
   SlashCommandBuilder
 } = require("discord.js");
 
-// ====================
-// RENDER WEB SERVER
-// ====================
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -23,10 +19,6 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log("Web server running on port " + PORT);
 });
-
-// ====================
-// DISCORD CLIENT
-// ====================
 
 const client = new Client({
   intents: [
@@ -41,21 +33,15 @@ const SERVER_ID = "1531632541377757224";
 const SERVER_NAME = "Thundra SMP";
 const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
 const SERVER_IP = "ThundraPVP.aternos.me";
-const MEMBER_ROLE_NAME = "👤・Member";
 
-// ====================
-// STORAGE
-// ====================
+const MEMBER_ROLE_NAME = "👤・Member";
+const ADMIN_ROLE_NAME = "🛡️・Admin";
 
 const spam = new Map();
 const repeatedMessages = new Map();
 const repeatedPings = new Map();
 const warnings = new Map();
 const afkUsers = new Map();
-
-// ====================
-// RANDOM RESPONSES
-// ====================
 
 const greetingResponses = [
   "Hey there! wsp",
@@ -129,17 +115,9 @@ const ipResponses = [
   "It's **" + SERVER_IP + "**. See you there!"
 ];
 
-// ====================
-// RANDOM RESPONSE
-// ====================
-
 function randomResponse(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
-
-// ====================
-// CLEAN MESSAGE
-// ====================
 
 function cleanText(text) {
   return text
@@ -150,10 +128,6 @@ function cleanText(text) {
     .trim();
 }
 
-// ====================
-// REPEATED CHARACTER DETECTOR
-// ====================
-
 function isCharacterSpam(text) {
   if (!text) return false;
 
@@ -161,20 +135,10 @@ function isCharacterSpam(text) {
     .replace(/\s/g, "")
     .replace(/[^a-zA-Z]/g, "");
 
-  if (cleaned.length < 10) {
-    return false;
-  }
+  if (cleaned.length < 10) return false;
 
-  if (/(.)\1{7,}/i.test(cleaned)) {
-    return true;
-  }
-
-  return false;
+  return /(.)\1{7,}/i.test(cleaned);
 }
-
-// ====================
-// REPEATED PATTERN DETECTOR
-// ====================
 
 function isPatternSpam(text) {
   if (!text) return false;
@@ -184,9 +148,7 @@ function isPatternSpam(text) {
     .replace(/[^a-zA-Z]/g, "")
     .toLowerCase();
 
-  if (cleaned.length < 12) {
-    return false;
-  }
+  if (cleaned.length < 12) return false;
 
   for (let patternLength = 1; patternLength <= 4; patternLength++) {
     if (cleaned.length < patternLength * 6) {
@@ -209,17 +171,11 @@ function isPatternSpam(text) {
       }
     }
 
-    if (repeated) {
-      return true;
-    }
+    if (repeated) return true;
   }
 
   return false;
 }
-
-// ====================
-// GREETING DETECTOR
-// ====================
 
 function isGreeting(text) {
   const greetings = [
@@ -254,10 +210,6 @@ function isGreeting(text) {
   });
 }
 
-// ====================
-// HOW ARE YOU DETECTOR
-// ====================
-
 function isHowAreYou(text) {
   const patterns = [
     "how are you",
@@ -276,14 +228,8 @@ function isHowAreYou(text) {
     "how are u thundra bot"
   ];
 
-  return patterns.some((pattern) =>
-    text.includes(pattern)
-  );
+  return patterns.some((pattern) => text.includes(pattern));
 }
-
-// ====================
-// IP DETECTOR
-// ====================
 
 function isIpQuestion(text) {
   const hasBotName =
@@ -309,20 +255,12 @@ function isIpQuestion(text) {
   return hasBotName && askingForIp;
 }
 
-// ====================
-// BOT NAME ONLY
-// ====================
-
 function isBotNameOnly(text) {
   return (
     text === "thundra bot" ||
     text === "thundrabot"
   );
 }
-
-// ====================
-// MUTE DM
-// ====================
 
 async function sendMuteDM(user, duration, reason) {
   try {
@@ -344,10 +282,6 @@ async function sendMuteDM(user, duration, reason) {
   }
 }
 
-// ====================
-// MUTE OVER DM
-// ====================
-
 async function sendMuteOverDM(user) {
   try {
     await user.send(
@@ -363,10 +297,6 @@ async function sendMuteOverDM(user) {
   }
 }
 
-// ====================
-// AUTO MUTE
-// ====================
-
 async function autoMute(member, reason) {
   try {
     await member.timeout(
@@ -374,24 +304,11 @@ async function autoMute(member, reason) {
       reason
     );
 
-    try {
-      await member.user.send(
-        "You were muted in " +
-          SERVER_NAME +
-          ".\n\n" +
-          "Duration: 5 minutes\n" +
-          "Reason: " +
-          reason +
-          "\n\n" +
-          "Server: " +
-          INVITE_LINK
-      );
-    } catch (error) {
-      console.log(
-        "Could not DM " +
-          member.user.tag
-      );
-    }
+    await sendMuteDM(
+      member.user,
+      "5 minutes",
+      reason
+    );
 
     setTimeout(() => {
       sendMuteOverDM(member.user);
@@ -404,23 +321,11 @@ async function autoMute(member, reason) {
   }
 }
 
-// ====================
-// MESSAGE HANDLER
-// ====================
-
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!message.guild) return;
 
-  // ====================
-  // REMOVE AFK WHEN USER TALKS
-  // ====================
-
   if (afkUsers.has(message.author.id)) {
-    const afkData = afkUsers.get(
-      message.author.id
-    );
-
     afkUsers.delete(message.author.id);
 
     try {
@@ -429,31 +334,21 @@ client.on("messageCreate", async (message) => {
           " is no longer AFK."
       );
     } catch (error) {
-      console.log(
-        "Could not send AFK removal message."
-      );
+      console.log("Could not send AFK removal message.");
     }
   }
 
   const text = cleanText(message.content);
+
   const botWasMentioned =
     message.mentions.has(client.user);
 
-  // ====================
-  // AFK PING CHECK
-  // ====================
-
   if (message.mentions.users.size > 0) {
-    for (const [
-      userId
-    ] of message.mentions.users) {
-      if (userId === client.user.id) {
-        continue;
-      }
+    for (const [userId] of message.mentions.users) {
+      if (userId === client.user.id) continue;
 
       if (afkUsers.has(userId)) {
-        const afkData =
-          afkUsers.get(userId);
+        const afkData = afkUsers.get(userId);
 
         try {
           await message.reply(
@@ -463,19 +358,13 @@ client.on("messageCreate", async (message) => {
               afkData.reason
           );
         } catch (error) {
-          console.log(
-            "Could not send AFK response."
-          );
+          console.log("Could not send AFK response.");
         }
 
         break;
       }
     }
   }
-
-  // ====================
-  // BOT RESPONSES
-  // ====================
 
   if (isIpQuestion(text)) {
     await message.reply(
@@ -502,9 +391,6 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  // Only respond when the message
-  // is ONLY the bot name/ping.
-
   if (
     isBotNameOnly(text) ||
     (botWasMentioned && text === "")
@@ -515,10 +401,6 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  // ====================
-  // CHARACTER SPAM
-  // ====================
-
   if (
     isCharacterSpam(message.content) ||
     isPatternSpam(message.content)
@@ -526,9 +408,7 @@ client.on("messageCreate", async (message) => {
     try {
       await message.delete();
     } catch (error) {
-      console.log(
-        "Could not delete spam message."
-      );
+      console.log("Could not delete spam message.");
     }
 
     const muted = await autoMute(
@@ -539,7 +419,7 @@ client.on("messageCreate", async (message) => {
     if (muted) {
       await message.channel.send(
         message.author +
-          " was muted for 5 minutes for excessive repeated characters/patterns."
+          " was muted for 5 minutes for excessive repeated characters or patterns."
       );
     }
 
@@ -549,10 +429,6 @@ client.on("messageCreate", async (message) => {
 
     return;
   }
-
-  // ====================
-  // NORMAL ANTI-SPAM
-  // ====================
 
   const now = Date.now();
 
@@ -589,10 +465,6 @@ client.on("messageCreate", async (message) => {
 
     return;
   }
-
-  // ====================
-  // SAME MESSAGE 3 TIMES
-  // ====================
 
   const previous =
     repeatedMessages.get(
@@ -639,11 +511,6 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  // ====================
-  // SAME PERSON PINGED
-  // 3 TIMES IN A ROW
-  // ====================
-
   if (message.mentions.users.size > 0) {
     const mentionedUserIds =
       Array.from(
@@ -664,14 +531,12 @@ client.on("messageCreate", async (message) => {
         mentionKey
     ) {
       previousPing.count++;
-      previousPing.lastMessage = now;
     } else {
       repeatedPings.set(
         message.author.id,
         {
           mentionKey: mentionKey,
-          count: 1,
-          lastMessage: now
+          count: 1
         }
       );
     }
@@ -707,55 +572,31 @@ client.on("messageCreate", async (message) => {
   }
 });
 
-// ====================
-// WARNING SYSTEM
-// ====================
-
 function getWarnings(userId) {
   return warnings.get(userId) || [];
 }
 
-// ====================
-// /AFK
-// ====================
-
 const afkCommand =
   new SlashCommandBuilder()
     .setName("afk")
-    .setDescription(
-      "Set yourself as AFK"
-    )
+    .setDescription("Set yourself as AFK")
     .addStringOption((option) =>
       option
         .setName("reason")
-        .setDescription(
-          "Why are you AFK?"
-        )
+        .setDescription("Why are you AFK?")
         .setRequired(true)
     );
-
-// ====================
-// /UNMUTE
-// ====================
 
 const unmuteCommand =
   new SlashCommandBuilder()
     .setName("unmute")
-    .setDescription(
-      "Remove a timeout from a member"
-    )
+    .setDescription("Remove a timeout from a member")
     .addUserOption((option) =>
       option
         .setName("user")
-        .setDescription(
-          "Select the member to unmute"
-        )
+        .setDescription("Select the member to unmute")
         .setRequired(true)
     );
-
-// ====================
-// /WARN
-// ====================
 
 const warnCommand =
   new SlashCommandBuilder()
@@ -764,42 +605,26 @@ const warnCommand =
     .addUserOption((option) =>
       option
         .setName("user")
-        .setDescription(
-          "Select the member to warn"
-        )
+        .setDescription("Select the member to warn")
         .setRequired(true)
     )
     .addStringOption((option) =>
       option
         .setName("reason")
-        .setDescription(
-          "Reason for the warning"
-        )
+        .setDescription("Reason for the warning")
         .setRequired(true)
     );
-
-// ====================
-// /WARNINGS
-// ====================
 
 const warningsCommand =
   new SlashCommandBuilder()
     .setName("warnings")
-    .setDescription(
-      "View a member's warnings"
-    )
+    .setDescription("View a member's warnings")
     .addUserOption((option) =>
       option
         .setName("user")
-        .setDescription(
-          "Select the member"
-        )
+        .setDescription("Select the member")
         .setRequired(true)
     );
-
-// ====================
-// /MUTE
-// ====================
 
 const muteCommand =
   new SlashCommandBuilder()
@@ -808,31 +633,21 @@ const muteCommand =
     .addUserOption((option) =>
       option
         .setName("user")
-        .setDescription(
-          "Select the member to mute"
-        )
+        .setDescription("Select the member to mute")
         .setRequired(true)
     )
     .addStringOption((option) =>
       option
         .setName("duration")
-        .setDescription(
-          "Example: 30s, 5m, 1h, 1d"
-        )
+        .setDescription("Example: 30s, 5m, 1h, 1d")
         .setRequired(true)
     )
     .addStringOption((option) =>
       option
         .setName("reason")
-        .setDescription(
-          "Reason for the mute"
-        )
+        .setDescription("Reason for the mute")
         .setRequired(false)
     );
-
-// ====================
-// /BAN
-// ====================
 
 const banCommand =
   new SlashCommandBuilder()
@@ -841,23 +656,15 @@ const banCommand =
     .addUserOption((option) =>
       option
         .setName("user")
-        .setDescription(
-          "Select the member to ban"
-        )
+        .setDescription("Select the member to ban")
         .setRequired(true)
     )
     .addStringOption((option) =>
       option
         .setName("reason")
-        .setDescription(
-          "Reason for the ban"
-        )
+        .setDescription("Reason for the ban")
         .setRequired(false)
     );
-
-// ====================
-// /UNBAN
-// ====================
 
 const unbanCommand =
   new SlashCommandBuilder()
@@ -866,15 +673,9 @@ const unbanCommand =
     .addStringOption((option) =>
       option
         .setName("userid")
-        .setDescription(
-          "Discord user ID"
-        )
+        .setDescription("Discord user ID")
         .setRequired(true)
     );
-
-// ====================
-// /KICK
-// ====================
 
 const kickCommand =
   new SlashCommandBuilder()
@@ -883,23 +684,15 @@ const kickCommand =
     .addUserOption((option) =>
       option
         .setName("user")
-        .setDescription(
-          "Select the member to kick"
-        )
+        .setDescription("Select the member to kick")
         .setRequired(true)
     )
     .addStringOption((option) =>
       option
         .setName("reason")
-        .setDescription(
-          "Reason for the kick"
-        )
+        .setDescription("Reason for the kick")
         .setRequired(false)
     );
-
-// ====================
-// REGISTER COMMANDS
-// ====================
 
 client.once("ready", async () => {
   console.log(
@@ -942,13 +735,8 @@ client.once("ready", async () => {
       }
     );
 
-    console.log(
-      "Old commands removed!"
-    );
-
-    console.log(
-      "All commands registered!"
-    );
+    console.log("Old commands removed!");
+    console.log("All commands registered!");
   } catch (error) {
     console.error(
       "Command registration failed:",
@@ -957,43 +745,75 @@ client.once("ready", async () => {
   }
 });
 
-// ====================
-// COMMAND HANDLER
-// ====================
-
 client.on(
   "interactionCreate",
   async (interaction) => {
-    if (
-      !interaction.isChatInputCommand()
-    ) {
+    if (!interaction.isChatInputCommand()) {
       return;
     }
 
-    // ====================
-    // /AFK
-    // ====================
+    let member;
+
+    try {
+      member =
+        await interaction.guild.members.fetch(
+          interaction.user.id
+        );
+    } catch (error) {
+      console.error(
+        "Could not fetch command user:",
+        error
+      );
+
+      if (!interaction.replied) {
+        await interaction.reply({
+          content:
+            "I couldn't check your server roles.",
+          ephemeral: true
+        });
+      }
+
+      return;
+    }
+
+    const isAdminRole =
+      member.roles.cache.some(
+        (role) =>
+          role.name ===
+          ADMIN_ROLE_NAME
+      );
+
+    const isMemberRole =
+      member.roles.cache.some(
+        (role) =>
+          role.name ===
+          MEMBER_ROLE_NAME
+      );
+
+    if (
+      interaction.commandName !== "afk" &&
+      (isAdminRole || isMemberRole)
+    ) {
+      await interaction.reply({
+        content:
+          "You can only use `/afk` with your current role.",
+        ephemeral: true
+      });
+
+      return;
+    }
 
     if (
       interaction.commandName ===
       "afk"
     ) {
-      const member =
-        interaction.member;
-
-      const hasMemberRole =
-        member.roles.cache.some(
-          (role) =>
-            role.name ===
-            MEMBER_ROLE_NAME
-        );
-
-      if (!hasMemberRole) {
+      if (
+        !isAdminRole &&
+        !isMemberRole
+      ) {
         await interaction.reply({
           content:
-            "You need the " +
-            MEMBER_ROLE_NAME +
-            " role to use /afk.",
+            "You need the 👤・Member or 🛡️・Admin role to use `/afk`.",
           ephemeral: true
         });
 
@@ -1021,10 +841,6 @@ client.on(
       return;
     }
 
-    // ====================
-    // /UNMUTE
-    // ====================
-
     if (
       interaction.commandName ===
       "unmute"
@@ -1035,12 +851,12 @@ client.on(
         );
 
       try {
-        const member =
+        const targetMember =
           await interaction.guild.members.fetch(
             user.id
           );
 
-        await member.timeout(
+        await targetMember.timeout(
           null,
           "Manual unmute"
         );
@@ -1071,19 +887,17 @@ client.on(
           error
         );
 
-        await interaction.reply({
-          content:
-            "I could not unmute that user.",
-          ephemeral: true
-        });
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "I could not unmute that user.",
+            ephemeral: true
+          });
+        }
       }
 
       return;
     }
-
-    // ====================
-    // /WARN
-    // ====================
 
     if (
       interaction.commandName ===
@@ -1148,10 +962,6 @@ client.on(
       return;
     }
 
-    // ====================
-    // /WARNINGS
-    // ====================
-
     if (
       interaction.commandName ===
       "warnings"
@@ -1191,16 +1001,10 @@ client.on(
         }
       );
 
-      await interaction.reply(
-        text
-      );
+      await interaction.reply(text);
 
       return;
     }
-
-    // ====================
-    // /MUTE
-    // ====================
 
     if (
       interaction.commandName ===
@@ -1292,12 +1096,12 @@ client.on(
       }
 
       try {
-        const member =
+        const targetMember =
           await interaction.guild.members.fetch(
             user.id
           );
 
-        await member.timeout(
+        await targetMember.timeout(
           milliseconds,
           "Muted by " +
             interaction.user.tag +
@@ -1329,19 +1133,17 @@ client.on(
           error
         );
 
-        await interaction.reply({
-          content:
-            "I could not mute that user.",
-          ephemeral: true
-        });
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "I could not mute that user.",
+            ephemeral: true
+          });
+        }
       }
 
       return;
     }
-
-    // ====================
-    // /BAN
-    // ====================
 
     if (
       interaction.commandName ===
@@ -1397,19 +1199,17 @@ client.on(
           error
         );
 
-        await interaction.reply({
-          content:
-            "I could not ban that user.",
-          ephemeral: true
-        });
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "I could not ban that user.",
+            ephemeral: true
+          });
+        }
       }
 
       return;
     }
-
-    // ====================
-    // /UNBAN
-    // ====================
 
     if (
       interaction.commandName ===
@@ -1459,19 +1259,17 @@ client.on(
           error
         );
 
-        await interaction.reply({
-          content:
-            "I could not unban that user. Check the ID and make sure they are banned.",
-          ephemeral: true
-        });
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "I could not unban that user. Check the ID and make sure they are banned.",
+            ephemeral: true
+          });
+        }
       }
 
       return;
     }
-
-    // ====================
-    // /KICK
-    // ====================
 
     if (
       interaction.commandName ===
@@ -1508,12 +1306,14 @@ client.on(
       }
 
       try {
-        const member =
+        const targetMember =
           await interaction.guild.members.fetch(
             user.id
           );
 
-        await member.kick(reason);
+        await targetMember.kick(
+          reason
+        );
 
         await interaction.reply(
           user +
@@ -1527,20 +1327,18 @@ client.on(
           error
         );
 
-        await interaction.reply({
-          content:
-            "I could not kick that user.",
-          ephemeral: true
-        });
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "I could not kick that user.",
+            ephemeral: true
+          });
+        }
       }
 
       return;
     }
   }
 );
-
-// ====================
-// LOGIN
-// ====================
 
 client.login(process.env.TOKEN);
