@@ -1,4 +1,3 @@
-```js
 require("dotenv").config();
 
 const express = require("express");
@@ -10,10 +9,6 @@ const {
   SlashCommandBuilder
 } = require("discord.js");
 
-// ====================
-// RENDER WEB SERVER
-// ====================
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -24,10 +19,6 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log("Web server running on port " + PORT);
 });
-
-// ====================
-// DISCORD CLIENT
-// ====================
 
 const client = new Client({
   intents: [
@@ -41,12 +32,9 @@ const SERVER_ID = "1531632541377757224";
 const SERVER_NAME = "Thundra SMP";
 const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
 
-// ====================
-// ANTI-SPAM
-// ====================
-
 const spam = new Map();
 const repeatedMessages = new Map();
+const warnings = new Map();
 
 async function sendMuteDM(user, duration, reason) {
   try {
@@ -89,23 +77,15 @@ client.on("messageCreate", async (message) => {
 
   const now = Date.now();
 
-  // ====================
-  // 5 MESSAGES IN 5 SECONDS
-  // ====================
-
   const messages = spam.get(message.author.id) || [];
-
   const recent = messages.filter((time) => now - time < 5000);
-  recent.push(now);
 
+  recent.push(now);
   spam.set(message.author.id, recent);
 
   if (recent.length >= 5) {
     try {
-      await message.member.timeout(
-        5 * 60 * 1000,
-        "Anti-spam"
-      );
+      await message.member.timeout(5 * 60 * 1000, "Anti-spam");
 
       await message.channel.send(
         "🚫 " +
@@ -131,10 +111,6 @@ client.on("messageCreate", async (message) => {
       console.error("Could not timeout user:", error);
     }
   }
-
-  // ====================
-  // 3 EXACTLY IDENTICAL MESSAGES IN A ROW
-  // ====================
 
   const previous = repeatedMessages.get(message.author.id);
 
@@ -180,19 +156,9 @@ client.on("messageCreate", async (message) => {
   }
 });
 
-// ====================
-// WARNINGS
-// ====================
-
-const warnings = new Map();
-
 function getWarnings(userId) {
   return warnings.get(userId) || [];
 }
-
-// ====================
-// /UNMUTE
-// ====================
 
 const unmuteCommand = new SlashCommandBuilder()
   .setName("unmute")
@@ -203,10 +169,6 @@ const unmuteCommand = new SlashCommandBuilder()
       .setDescription("Select the member to unmute")
       .setRequired(true)
   );
-
-// ====================
-// /WARN
-// ====================
 
 const warnCommand = new SlashCommandBuilder()
   .setName("warn")
@@ -224,10 +186,6 @@ const warnCommand = new SlashCommandBuilder()
       .setRequired(true)
   );
 
-// ====================
-// /WARNINGS
-// ====================
-
 const warningsCommand = new SlashCommandBuilder()
   .setName("warnings")
   .setDescription("View a member's warnings")
@@ -237,10 +195,6 @@ const warningsCommand = new SlashCommandBuilder()
       .setDescription("Select the member")
       .setRequired(true)
   );
-
-// ====================
-// /MUTE
-// ====================
 
 const muteCommand = new SlashCommandBuilder()
   .setName("mute")
@@ -264,10 +218,6 @@ const muteCommand = new SlashCommandBuilder()
       .setRequired(false)
   );
 
-// ====================
-// /BAN
-// ====================
-
 const banCommand = new SlashCommandBuilder()
   .setName("ban")
   .setDescription("Ban a member")
@@ -284,10 +234,6 @@ const banCommand = new SlashCommandBuilder()
       .setRequired(false)
   );
 
-// ====================
-// /UNBAN
-// ====================
-
 const unbanCommand = new SlashCommandBuilder()
   .setName("unban")
   .setDescription("Unban a user")
@@ -297,10 +243,6 @@ const unbanCommand = new SlashCommandBuilder()
       .setDescription("Discord user ID")
       .setRequired(true)
   );
-
-// ====================
-// /KICK
-// ====================
 
 const kickCommand = new SlashCommandBuilder()
   .setName("kick")
@@ -317,10 +259,6 @@ const kickCommand = new SlashCommandBuilder()
       .setDescription("Reason for the kick")
       .setRequired(false)
   );
-
-// ====================
-// REGISTER COMMANDS
-// ====================
 
 client.once("ready", async () => {
   console.log("Logged in as " + client.user.tag);
@@ -361,16 +299,8 @@ client.once("ready", async () => {
   }
 });
 
-// ====================
-// COMMAND HANDLER
-// ====================
-
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-
-  // ====================
-  // /UNMUTE
-  // ====================
 
   if (interaction.commandName === "unmute") {
     const user = interaction.options.getUser("user");
@@ -407,10 +337,6 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
-
-  // ====================
-  // /WARN
-  // ====================
 
   if (interaction.commandName === "warn") {
     const user = interaction.options.getUser("user");
@@ -458,10 +384,6 @@ client.on("interactionCreate", async (interaction) => {
     return;
   }
 
-  // ====================
-  // /WARNINGS
-  // ====================
-
   if (interaction.commandName === "warnings") {
     const user = interaction.options.getUser("user");
     const userWarnings = getWarnings(user.id);
@@ -484,13 +406,8 @@ client.on("interactionCreate", async (interaction) => {
     });
 
     await interaction.reply(text);
-
     return;
   }
-
-  // ====================
-  // /MUTE
-  // ====================
 
   if (interaction.commandName === "mute") {
     const user = interaction.options.getUser("user");
@@ -516,17 +433,11 @@ client.on("interactionCreate", async (interaction) => {
 
     if (unit === "s") {
       milliseconds = amount * 1000;
-    }
-
-    if (unit === "m") {
+    } else if (unit === "m") {
       milliseconds = amount * 60 * 1000;
-    }
-
-    if (unit === "h") {
+    } else if (unit === "h") {
       milliseconds = amount * 60 * 60 * 1000;
-    }
-
-    if (unit === "d") {
+    } else if (unit === "d") {
       milliseconds = amount * 24 * 60 * 60 * 1000;
     }
 
@@ -559,11 +470,7 @@ client.on("interactionCreate", async (interaction) => {
         reason
       );
 
-      await sendMuteDM(
-        user,
-        duration,
-        reason
-      );
+      await sendMuteDM(user, duration, reason);
 
       setTimeout(() => {
         sendMuteOverDM(user);
@@ -579,10 +486,6 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
-
-  // ====================
-  // /BAN
-  // ====================
 
   if (interaction.commandName === "ban") {
     const user = interaction.options.getUser("user");
@@ -603,7 +506,7 @@ client.on("interactionCreate", async (interaction) => {
         INVITE_LINK
       );
     } catch (error) {
-      console.log("Could not DM " + user.tag + " before banning.");
+      console.log("Could not DM " + user.tag);
     }
 
     try {
@@ -629,10 +532,6 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
-
-  // ====================
-  // /UNBAN
-  // ====================
 
   if (interaction.commandName === "unban") {
     const userId = interaction.options.getString("userid");
@@ -676,10 +575,6 @@ client.on("interactionCreate", async (interaction) => {
     return;
   }
 
-  // ====================
-  // /KICK
-  // ====================
-
   if (interaction.commandName === "kick") {
     const user = interaction.options.getUser("user");
 
@@ -699,7 +594,7 @@ client.on("interactionCreate", async (interaction) => {
         INVITE_LINK
       );
     } catch (error) {
-      console.log("Could not DM " + user.tag + " before kicking.");
+      console.log("Could not DM " + user.tag);
     }
 
     try {
@@ -727,9 +622,4 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-// ====================
-// LOGIN
-// ====================
-
 client.login(process.env.TOKEN);
-```
