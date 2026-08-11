@@ -51,14 +51,18 @@ const repeatedMessages = new Map();
 async function sendMuteDM(user, duration, reason) {
   try {
     await user.send(
-      `🔇 **You were muted in ${SERVER_NAME}.**\n\n` +
-      `**Duration:** ${duration}\n` +
-      `**Reason:** ${reason}\n\n` +
-      `🔗 **Server:** ${INVITE_LINK}`
+     async function sendMuteDM(user, duration, reason) {
+  try {
+    await user.send(
+      "🔇 You were muted in " + SERVER_NAME + ".\n\n" +
+      "Duration: " + duration + "\n" +
+      "Reason: " + reason + "\n\n" +
+      "🔗 Server: " + INVITE_LINK
     );
   } catch (error) {
-    console.log(`⚠️ Couldn't DM ${user.tag}.`);
+    console.log("Couldn't DM " + user.tag);
   }
+}
 }
 
 async function sendMuteOverDM(user) {
