@@ -38,11 +38,10 @@ const client = new Client({
 
 const SERVER_ID = "1531632541377757224";
 const SERVER_NAME = "Thundra SMP";
-const BOT_NAME = "thundra bot";
 const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
 
 // ====================
-// ANTI-SPAM
+// DATA
 // ====================
 
 const spam = new Map();
@@ -82,18 +81,22 @@ const greetingWords = [
   "hiii",
   "hiiii",
   "hiiiii",
+  "hiiiiii",
   "hello",
   "helloo",
   "hellooo",
   "helloooo",
+  "hellooooo",
   "hey",
   "heyy",
   "heyyy",
   "heyyyy",
+  "heyyyyy",
   "yo",
   "yoo",
   "yooo",
   "yoooo",
+  "yooooo",
   "sup",
   "wassup",
   "whatsup",
@@ -102,11 +105,13 @@ const greetingWords = [
 ];
 
 // ====================
-// CHECK IF MESSAGE IS A GREETING
+// GREETING DETECTOR
 // ====================
 
 function isBotGreeting(message) {
-  let text = message.toLowerCase();
+  let text = message.content.toLowerCase();
+
+  const botWasMentioned = message.mentions.has(client.user);
 
   // Remove Discord mentions
   text = text.replace(/<@!?\d+>/g, " ");
@@ -114,21 +119,32 @@ function isBotGreeting(message) {
   // Remove punctuation
   text = text.replace(/[.,!?;:'"`()[\]{}]/g, " ");
 
-  // Turn multiple spaces into one
+  // Normalize spaces
   text = text.replace(/\s+/g, " ").trim();
 
-  // Must contain "thundra bot"
-  if (!text.includes(BOT_NAME)) {
+  // If bot was mentioned, only require a greeting
+  if (botWasMentioned) {
+    return greetingWords.some((greeting) => {
+      return (
+        text === greeting ||
+        text.startsWith(greeting + " ") ||
+        text.endsWith(" " + greeting) ||
+        text.includes(" " + greeting + " ")
+      );
+    });
+  }
+
+  // Without a mention, require "thundra bot"
+  if (!text.includes("thundra bot")) {
     return false;
   }
 
-  // Remove the bot name
+  // Remove bot name
   const withoutBotName = text
-    .replace(BOT_NAME, " ")
+    .replace(/thundra bot/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-  // Check if any greeting word exists
   return greetingWords.some((greeting) => {
     return (
       withoutBotName === greeting ||
@@ -140,7 +156,7 @@ function isBotGreeting(message) {
 }
 
 // ====================
-// MUTE DMS
+// MUTE DM
 // ====================
 
 async function sendMuteDM(user, duration, reason) {
@@ -163,6 +179,10 @@ async function sendMuteDM(user, duration, reason) {
   }
 }
 
+// ====================
+// MUTE OVER DM
+// ====================
+
 async function sendMuteOverDM(user) {
   try {
     await user.send(
@@ -183,6 +203,9 @@ async function sendMuteOverDM(user) {
 // ====================
 
 client.on("messageCreate", async (message) => {
+  // DEBUG LOG
+  console.log("MESSAGE RECEIVED:", message.content);
+
   if (message.author.bot) return;
   if (!message.member) return;
 
@@ -196,7 +219,12 @@ client.on("messageCreate", async (message) => {
         Math.floor(Math.random() * greetingResponses.length)
       ];
 
-    await message.reply(response);
+    try {
+      await message.reply(response);
+    } catch (error) {
+      console.error("Greeting reply error:", error);
+    }
+
     return;
   }
 
@@ -502,7 +530,9 @@ client.once("ready", async () => {
 client.on(
   "interactionCreate",
   async (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
+    if (!interaction.isChatInputCommand()) {
+      return;
+    }
 
     // ====================
     // /UNMUTE
@@ -640,6 +670,7 @@ client.on(
             user +
             " has no warnings."
         );
+
         return;
       }
 
@@ -713,17 +744,10 @@ client.on(
           amount * 60 * 1000;
       } else if (unit === "h") {
         milliseconds =
-          amount *
-          60 *
-          60 *
-          1000;
+          amount * 60 * 60 * 1000;
       } else if (unit === "d") {
         milliseconds =
-          amount *
-          24 *
-          60 *
-          60 *
-          1000;
+          amount * 24 * 60 * 60 * 1000;
       }
 
       if (
