@@ -491,7 +491,7 @@ client.on("interactionCreate", async (interaction) => {
     if (!match) {
       return interaction.reply({
         content:
-          "❌ Invalid duration. Use `30s`, `5m`, `1h`, or `1d`.",
+          "❌ Invalid duration. Use 30s, 5m, 1h, or 1d.",
         ephemeral: true
       });
     }
