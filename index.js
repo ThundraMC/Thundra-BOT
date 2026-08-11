@@ -1,3 +1,4 @@
+js
 require("dotenv").config();
 
 const express = require("express");
@@ -172,53 +173,105 @@ function getDisplayName(member, user) {
 }
 
 // ============================
-// SPAM DETECTION
+// EMOJI / CHARACTER SPAM
 // ============================
 
 function isCharacterSpam(text) {
   if (!text) return false;
 
-  const cleaned = text
-    .replace(/\s/g, "")
-    .replace(/[^a-zA-Z]/g, "");
+  const cleaned = text.replace(/\s/g, "");
 
-  if (cleaned.length < 10) return false;
+  if (cleaned.length < 10) {
+    return false;
+  }
 
-  return /(.)\1{7,}/i.test(cleaned);
+  // Repeated letters, numbers, symbols, or Unicode characters
+  if (/(.)\1{7,}/u.test(cleaned)) {
+    return true;
+  }
+
+  // Check repeated Unicode characters including emojis
+  const chars = Array.from(cleaned);
+
+  let consecutive = 1;
+
+  for (let i = 1; i < chars.length; i++) {
+    if (chars[i] === chars[i - 1]) {
+      consecutive++;
+
+      if (consecutive >= 8) {
+        return true;
+      }
+    } else {
+      consecutive = 1;
+    }
+  }
+
+  return false;
 }
+
+// ============================
+// PATTERN SPAM
+// ============================
 
 function isPatternSpam(text) {
   if (!text) return false;
 
-  const cleaned = text
-    .replace(/\s/g, "")
-    .replace(/[^a-zA-Z]/g, "")
-    .toLowerCase();
+  const cleaned = text.replace(/\s/g, "");
 
-  if (cleaned.length < 12) return false;
+  if (cleaned.length < 12) {
+    return false;
+  }
 
+  const chars = Array.from(cleaned);
+
+  // Detect patterns like:
+  // HIHIHIHIHI
+  // 😂🤣😂🤣😂🤣
+  // 😣😣😣😣😣😣
   for (let patternLength = 1; patternLength <= 4; patternLength++) {
-    if (cleaned.length < patternLength * 6) {
+    if (chars.length < patternLength * 6) {
       continue;
     }
 
-    const pattern = cleaned.substring(0, patternLength);
+    const pattern = chars
+      .slice(0, patternLength)
+      .join("");
+
     let repeated = true;
 
     for (
       let i = patternLength;
-      i < cleaned.length;
+      i < chars.length;
       i += patternLength
     ) {
-      if (
-        cleaned.substring(i, i + patternLength) !== pattern
-      ) {
+      const current = chars
+        .slice(i, i + patternLength)
+        .join("");
+
+      if (current !== pattern) {
         repeated = false;
         break;
       }
     }
 
-    if (repeated) return true;
+    if (repeated) {
+      return true;
+    }
+  }
+
+  // Detect a large amount of emojis
+  const emojiLike = chars.filter((char) => {
+    const code = char.codePointAt(0);
+
+    return (
+      (code >= 0x1f300 && code <= 0x1faff) ||
+      (code >= 0x2600 && code <= 0x27bf)
+    );
+  });
+
+  if (emojiLike.length >= 15) {
+    return true;
   }
 
   return false;
@@ -262,7 +315,7 @@ function isGreeting(text) {
 }
 
 // ============================
-// HOW ARE YOU DETECTION
+// HOW ARE YOU
 // ============================
 
 function isHowAreYou(text) {
@@ -436,8 +489,6 @@ client.on("messageCreate", async (message) => {
 
   if (message.mentions.users.size > 0) {
     for (const [userId] of message.mentions.users) {
-
-      // Don't trigger AFK system for the bot itself
       if (userId === client.user.id) {
         continue;
       }
@@ -467,12 +518,7 @@ client.on("messageCreate", async (message) => {
           mentionedUser
         );
 
-        // ============================
-        // PRIVATE AFK DM
-        // ONLY THE PERSON WHO PINGED
-        // CAN SEE THIS
-        // ============================
-
+        // Only the person who pinged them gets this
         try {
           await message.author.send(
             afkName +
@@ -517,15 +563,11 @@ client.on("messageCreate", async (message) => {
   }
 
   // ============================
-  // BOT MENTION
+  // BOT MENTION + GREETING
   // ============================
 
   const botWasMentioned =
     message.mentions.has(client.user);
-
-  // ============================
-  // GREETINGS
-  // ============================
 
   if (
     (text.includes("thundra bot") ||
@@ -540,7 +582,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ============================
-  // ONLY BOT NAME / ONLY PING
+  // BOT NAME ONLY / ONLY PING
   // ============================
 
   if (
@@ -555,7 +597,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ============================
-  // REPEATED CHARACTER SPAM
+  // REPEATED CHARACTER / EMOJI SPAM
   // ============================
 
   if (
@@ -570,13 +612,13 @@ client.on("messageCreate", async (message) => {
 
     const muted = await autoMute(
       message.member,
-      "Excessive repeated characters or patterns"
+      "Excessive repeated characters, emojis, or patterns"
     );
 
     if (muted) {
       await message.channel.send(
         message.author +
-          " was muted for 5 minutes for excessive repeated characters or patterns."
+          " was muted for 5 minutes for excessive repeated characters, emojis, or patterns."
       );
     }
 
@@ -1053,7 +1095,7 @@ client.on(
         ephemeral: true
       });
 
-      // PUBLIC SERVER MESSAGE
+      // PUBLIC MESSAGE
       const displayName =
         getDisplayName(
           interaction.member,
@@ -1570,3 +1612,4 @@ client.on(
 // ============================
 
 client.login(process.env.TOKEN);
+
