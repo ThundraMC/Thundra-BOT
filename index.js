@@ -9,6 +9,10 @@ const {
   SlashCommandBuilder
 } = require("discord.js");
 
+// ============================
+// WEB SERVER FOR RENDER
+// ============================
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -20,6 +24,10 @@ app.listen(PORT, () => {
   console.log("Web server running on port " + PORT);
 });
 
+// ============================
+// DISCORD CLIENT
+// ============================
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -29,6 +37,10 @@ const client = new Client({
   ]
 });
 
+// ============================
+// SETTINGS
+// ============================
+
 const SERVER_ID = "1531632541377757224";
 const SERVER_NAME = "Thundra SMP";
 const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
@@ -37,11 +49,19 @@ const SERVER_IP = "ThundraPVP.aternos.me";
 const MEMBER_ROLE_NAME = "👤・Member";
 const ADMIN_ROLE_NAME = "🛡️・Admin";
 
+// ============================
+// STORAGE
+// ============================
+
 const spam = new Map();
 const repeatedMessages = new Map();
 const repeatedPings = new Map();
 const warnings = new Map();
 const afkUsers = new Map();
+
+// ============================
+// RANDOM RESPONSES
+// ============================
 
 const greetingResponses = [
   "Hey there! wsp",
@@ -104,7 +124,6 @@ const botResponses = [
 
 const ipResponses = [
   "The server IP is **" + SERVER_IP + "**.",
-  "You looking for the server IP? It's **" + SERVER_IP + "**.",
   "The Thundra SMP IP is **" + SERVER_IP + "**.",
   "Sure! The IP is **" + SERVER_IP + "**.",
   "Here you go: **" + SERVER_IP + "**",
@@ -118,6 +137,10 @@ const ipResponses = [
 function randomResponse(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
+
+// ============================
+// TEXT HELPERS
+// ============================
 
 function cleanText(text) {
   return text
@@ -145,8 +168,12 @@ function getDisplayName(member, user) {
     return user.username;
   }
 
-  return "User";
+  return "Player";
 }
+
+// ============================
+// SPAM DETECTION
+// ============================
 
 function isCharacterSpam(text) {
   if (!text) return false;
@@ -197,6 +224,10 @@ function isPatternSpam(text) {
   return false;
 }
 
+// ============================
+// GREETING DETECTION
+// ============================
+
 function isGreeting(text) {
   const greetings = [
     "hi",
@@ -230,6 +261,10 @@ function isGreeting(text) {
   });
 }
 
+// ============================
+// HOW ARE YOU DETECTION
+// ============================
+
 function isHowAreYou(text) {
   const patterns = [
     "how are you",
@@ -248,8 +283,14 @@ function isHowAreYou(text) {
     "how are u thundra bot"
   ];
 
-  return patterns.some((pattern) => text.includes(pattern));
+  return patterns.some((pattern) =>
+    text.includes(pattern)
+  );
 }
+
+// ============================
+// IP DETECTION
+// ============================
 
 function isIpQuestion(text) {
   const hasBotName =
@@ -275,12 +316,20 @@ function isIpQuestion(text) {
   return hasBotName && askingForIp;
 }
 
+// ============================
+// BOT NAME ONLY
+// ============================
+
 function isBotNameOnly(text) {
   return (
     text === "thundra bot" ||
     text === "thundrabot"
   );
 }
+
+// ============================
+// MUTE DM
+// ============================
 
 async function sendMuteDM(user, duration, reason) {
   try {
@@ -302,6 +351,10 @@ async function sendMuteDM(user, duration, reason) {
   }
 }
 
+// ============================
+// MUTE END DM
+// ============================
+
 async function sendMuteOverDM(user) {
   try {
     await user.send(
@@ -316,6 +369,10 @@ async function sendMuteOverDM(user) {
     console.log("Could not DM " + user.tag);
   }
 }
+
+// ============================
+// AUTO MUTE
+// ============================
 
 async function autoMute(member, reason) {
   try {
@@ -341,17 +398,20 @@ async function autoMute(member, reason) {
   }
 }
 
+// ============================
+// MESSAGE HANDLER
+// ============================
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!message.guild) return;
 
   const text = cleanText(message.content);
+  const now = Date.now();
 
-  /*
-   * ============================
-   * REMOVE AFK WHEN USER TALKS
-   * ============================
-   */
+  // ============================
+  // REMOVE AFK WHEN THEY TALK
+  // ============================
 
   if (afkUsers.has(message.author.id)) {
     afkUsers.delete(message.author.id);
@@ -366,20 +426,18 @@ client.on("messageCreate", async (message) => {
         authorName + " is no longer AFK."
       );
     } catch (error) {
-      console.log(
-        "Could not send AFK removal message."
-      );
+      console.log("Could not send AFK removal message.");
     }
   }
 
-  /*
-   * ============================
-   * AFK PING SYSTEM
-   * ============================
-   */
+  // ============================
+  // AFK PING SYSTEM
+  // ============================
 
   if (message.mentions.users.size > 0) {
     for (const [userId] of message.mentions.users) {
+
+      // Don't trigger AFK system for the bot itself
       if (userId === client.user.id) {
         continue;
       }
@@ -404,33 +462,28 @@ client.on("messageCreate", async (message) => {
           mentionedUser = null;
         }
 
-        /*
-         * Get nickname/display name.
-         * This NEVER creates a Discord mention.
-         */
         const afkName = getDisplayName(
           mentionedMember,
           mentionedUser
         );
 
+        // ============================
+        // PRIVATE AFK DM
+        // ONLY THE PERSON WHO PINGED
+        // CAN SEE THIS
+        // ============================
+
         try {
-          /*
-           * EPHEMERAL = ONLY THE PERSON
-           * WHO PINGED THEM CAN SEE THIS.
-           */
-          await message.reply({
-            content:
-              afkName +
+          await message.author.send(
+            afkName +
               " is AFK: " +
-              afkData.reason,
-            ephemeral: true,
-            allowedMentions: {
-              parse: []
-            }
-          });
+              afkData.reason
+          );
         } catch (error) {
           console.log(
-            "Could not send AFK response."
+            "Could not DM " +
+              message.author.tag +
+              " about AFK user."
           );
         }
 
@@ -439,40 +492,40 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  /*
-   * ============================
-   * SERVER IP
-   * ============================
-   */
+  // ============================
+  // BOT IP
+  // ============================
 
   if (isIpQuestion(text)) {
     await message.reply(
       randomResponse(ipResponses)
     );
+
     return;
   }
 
-  /*
-   * ============================
-   * HOW ARE YOU
-   * ============================
-   */
+  // ============================
+  // HOW ARE YOU
+  // ============================
 
   if (isHowAreYou(text)) {
     await message.reply(
       randomResponse(howAreYouResponses)
     );
+
     return;
   }
 
-  /*
-   * ============================
-   * GREETINGS
-   * ============================
-   */
+  // ============================
+  // BOT MENTION
+  // ============================
 
   const botWasMentioned =
     message.mentions.has(client.user);
+
+  // ============================
+  // GREETINGS
+  // ============================
 
   if (
     (text.includes("thundra bot") ||
@@ -482,14 +535,13 @@ client.on("messageCreate", async (message) => {
     await message.reply(
       randomResponse(greetingResponses)
     );
+
     return;
   }
 
-  /*
-   * ============================
-   * BOT NAME / ONLY PING
-   * ============================
-   */
+  // ============================
+  // ONLY BOT NAME / ONLY PING
+  // ============================
 
   if (
     isBotNameOnly(text) ||
@@ -498,14 +550,13 @@ client.on("messageCreate", async (message) => {
     await message.reply(
       randomResponse(botResponses)
     );
+
     return;
   }
 
-  /*
-   * ============================
-   * CHARACTER SPAM
-   * ============================
-   */
+  // ============================
+  // REPEATED CHARACTER SPAM
+  // ============================
 
   if (
     isCharacterSpam(message.content) ||
@@ -514,9 +565,7 @@ client.on("messageCreate", async (message) => {
     try {
       await message.delete();
     } catch (error) {
-      console.log(
-        "Could not delete spam message."
-      );
+      console.log("Could not delete spam message.");
     }
 
     const muted = await autoMute(
@@ -538,13 +587,9 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  /*
-   * ============================
-   * 5 MESSAGES / 5 SECONDS
-   * ============================
-   */
-
-  const now = Date.now();
+  // ============================
+  // 5 MESSAGES / 5 SECONDS
+  // ============================
 
   const messages =
     spam.get(message.author.id) || [];
@@ -580,11 +625,9 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  /*
-   * ============================
-   * 3 IDENTICAL MESSAGES
-   * ============================
-   */
+  // ============================
+  // 3 IDENTICAL MESSAGES
+  // ============================
 
   const previous =
     repeatedMessages.get(
@@ -631,11 +674,9 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  /*
-   * ============================
-   * SAME PERSON PINGED 3 TIMES
-   * ============================
-   */
+  // ============================
+  // SAME PERSON PINGED 3 TIMES
+  // ============================
 
   if (message.mentions.users.size > 0) {
     const mentionedUserIds =
@@ -698,15 +739,17 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+// ============================
+// WARNINGS
+// ============================
+
 function getWarnings(userId) {
   return warnings.get(userId) || [];
 }
 
-/*
- * ============================
- * /AFK
- * ============================
- */
+// ============================
+// /AFK
+// ============================
 
 const afkCommand =
   new SlashCommandBuilder()
@@ -719,11 +762,9 @@ const afkCommand =
         .setRequired(true)
     );
 
-/*
- * ============================
- * /UNMUTE
- * ============================
- */
+// ============================
+// /UNMUTE
+// ============================
 
 const unmuteCommand =
   new SlashCommandBuilder()
@@ -736,11 +777,9 @@ const unmuteCommand =
         .setRequired(true)
     );
 
-/*
- * ============================
- * /WARN
- * ============================
- */
+// ============================
+// /WARN
+// ============================
 
 const warnCommand =
   new SlashCommandBuilder()
@@ -759,11 +798,9 @@ const warnCommand =
         .setRequired(true)
     );
 
-/*
- * ============================
- * /WARNINGS
- * ============================
- */
+// ============================
+// /WARNINGS
+// ============================
 
 const warningsCommand =
   new SlashCommandBuilder()
@@ -776,11 +813,9 @@ const warningsCommand =
         .setRequired(true)
     );
 
-/*
- * ============================
- * /MUTE
- * ============================
- */
+// ============================
+// /MUTE
+// ============================
 
 const muteCommand =
   new SlashCommandBuilder()
@@ -805,11 +840,9 @@ const muteCommand =
         .setRequired(false)
     );
 
-/*
- * ============================
- * /BAN
- * ============================
- */
+// ============================
+// /BAN
+// ============================
 
 const banCommand =
   new SlashCommandBuilder()
@@ -828,11 +861,9 @@ const banCommand =
         .setRequired(false)
     );
 
-/*
- * ============================
- * /UNBAN
- * ============================
- */
+// ============================
+// /UNBAN
+// ============================
 
 const unbanCommand =
   new SlashCommandBuilder()
@@ -845,11 +876,9 @@ const unbanCommand =
         .setRequired(true)
     );
 
-/*
- * ============================
- * /KICK
- * ============================
- */
+// ============================
+// /KICK
+// ============================
 
 const kickCommand =
   new SlashCommandBuilder()
@@ -868,11 +897,9 @@ const kickCommand =
         .setRequired(false)
     );
 
-/*
- * ============================
- * REGISTER COMMANDS
- * ============================
- */
+// ============================
+// REGISTER COMMANDS
+// ============================
 
 client.once("ready", async () => {
   console.log(
@@ -882,9 +909,7 @@ client.once("ready", async () => {
 
   const rest =
     new REST({ version: "10" })
-      .setToken(
-        process.env.TOKEN
-      );
+      .setToken(process.env.TOKEN);
 
   try {
     await rest.put(
@@ -915,13 +940,8 @@ client.once("ready", async () => {
       }
     );
 
-    console.log(
-      "Old commands removed!"
-    );
-
-    console.log(
-      "All commands registered!"
-    );
+    console.log("Old commands removed!");
+    console.log("All commands registered!");
   } catch (error) {
     console.error(
       "Command registration failed:",
@@ -930,11 +950,9 @@ client.once("ready", async () => {
   }
 });
 
-/*
- * ============================
- * COMMAND HANDLER
- * ============================
- */
+// ============================
+// COMMAND HANDLER
+// ============================
 
 client.on(
   "interactionCreate",
@@ -968,20 +986,18 @@ client.on(
     const isAdminRole =
       member.roles.cache.some(
         (role) =>
-          role.name ===
-          ADMIN_ROLE_NAME
+          role.name === ADMIN_ROLE_NAME
       );
 
     const isMemberRole =
       member.roles.cache.some(
         (role) =>
-          role.name ===
-          MEMBER_ROLE_NAME
+          role.name === MEMBER_ROLE_NAME
       );
 
-    /*
-     * Members and Admins can ONLY use /afk.
-     */
+    // ============================
+    // MEMBERS + ADMINS ONLY /AFK
+    // ============================
 
     if (
       interaction.commandName !== "afk" &&
@@ -996,15 +1012,12 @@ client.on(
       return;
     }
 
-    /*
-     * ============================
-     * /AFK
-     * ============================
-     */
+    // ============================
+    // /AFK
+    // ============================
 
     if (
-      interaction.commandName ===
-      "afk"
+      interaction.commandName === "afk"
     ) {
       if (
         !isAdminRole &&
@@ -1032,11 +1045,7 @@ client.on(
         }
       );
 
-      /*
-       * ONLY THE PERSON WHO USED
-       * /AFK CAN SEE THIS.
-       */
-
+      // PRIVATE CONFIRMATION
       await interaction.reply({
         content:
           "You are now AFK: " +
@@ -1044,23 +1053,30 @@ client.on(
         ephemeral: true
       });
 
+      // PUBLIC SERVER MESSAGE
+      const displayName =
+        getDisplayName(
+          interaction.member,
+          interaction.user
+        );
+
+      await interaction.channel.send(
+        displayName +
+          " is now AFK."
+      );
+
       return;
     }
 
-    /*
-     * ============================
-     * /UNMUTE
-     * ============================
-     */
+    // ============================
+    // /UNMUTE
+    // ============================
 
     if (
-      interaction.commandName ===
-      "unmute"
+      interaction.commandName === "unmute"
     ) {
       const user =
-        interaction.options.getUser(
-          "user"
-        );
+        interaction.options.getUser("user");
 
       try {
         const targetMember =
@@ -1109,20 +1125,15 @@ client.on(
       return;
     }
 
-    /*
-     * ============================
-     * /WARN
-     * ============================
-     */
+    // ============================
+    // /WARN
+    // ============================
 
     if (
-      interaction.commandName ===
-      "warn"
+      interaction.commandName === "warn"
     ) {
       const user =
-        interaction.options.getUser(
-          "user"
-        );
+        interaction.options.getUser("user");
 
       const reason =
         interaction.options.getString(
@@ -1178,27 +1189,20 @@ client.on(
       return;
     }
 
-    /*
-     * ============================
-     * /WARNINGS
-     * ============================
-     */
+    // ============================
+    // /WARNINGS
+    // ============================
 
     if (
-      interaction.commandName ===
-      "warnings"
+      interaction.commandName === "warnings"
     ) {
       const user =
-        interaction.options.getUser(
-          "user"
-        );
+        interaction.options.getUser("user");
 
       const userWarnings =
         getWarnings(user.id);
 
-      if (
-        userWarnings.length === 0
-      ) {
+      if (userWarnings.length === 0) {
         await interaction.reply(
           user +
             " has no warnings."
@@ -1228,20 +1232,15 @@ client.on(
       return;
     }
 
-    /*
-     * ============================
-     * /MUTE
-     * ============================
-     */
+    // ============================
+    // /MUTE
+    // ============================
 
     if (
-      interaction.commandName ===
-      "mute"
+      interaction.commandName === "mute"
     ) {
       const user =
-        interaction.options.getUser(
-          "user"
-        );
+        interaction.options.getUser("user");
 
       const duration =
         interaction.options.getString(
@@ -1371,20 +1370,15 @@ client.on(
       return;
     }
 
-    /*
-     * ============================
-     * /BAN
-     * ============================
-     */
+    // ============================
+    // /BAN
+    // ============================
 
     if (
-      interaction.commandName ===
-      "ban"
+      interaction.commandName === "ban"
     ) {
       const user =
-        interaction.options.getUser(
-          "user"
-        );
+        interaction.options.getUser("user");
 
       const reason =
         interaction.options.getString(
@@ -1441,15 +1435,12 @@ client.on(
       return;
     }
 
-    /*
-     * ============================
-     * /UNBAN
-     * ============================
-     */
+    // ============================
+    // /UNBAN
+    // ============================
 
     if (
-      interaction.commandName ===
-      "unban"
+      interaction.commandName === "unban"
     ) {
       const userId =
         interaction.options.getString(
@@ -1505,20 +1496,15 @@ client.on(
       return;
     }
 
-    /*
-     * ============================
-     * /KICK
-     * ============================
-     */
+    // ============================
+    // /KICK
+    // ============================
 
     if (
-      interaction.commandName ===
-      "kick"
+      interaction.commandName === "kick"
     ) {
       const user =
-        interaction.options.getUser(
-          "user"
-        );
+        interaction.options.getUser("user");
 
       const reason =
         interaction.options.getString(
@@ -1578,5 +1564,9 @@ client.on(
     }
   }
 );
+
+// ============================
+// LOGIN
+// ============================
 
 client.login(process.env.TOKEN);
