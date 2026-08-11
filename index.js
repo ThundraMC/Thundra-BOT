@@ -17,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
-  res.send("Discord bot is online!");
+  res.send("Thundra Bot is online!");
 });
 
 app.listen(PORT, () => {
@@ -31,6 +31,7 @@ app.listen(PORT, () => {
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
   ]
@@ -39,9 +40,10 @@ const client = new Client({
 const SERVER_ID = "1531632541377757224";
 const SERVER_NAME = "Thundra SMP";
 const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
+const SERVER_IP = "ThundraPVP.aternos.me";
 
 // ====================
-// DATA
+// STORAGE
 // ====================
 
 const spam = new Map();
@@ -49,110 +51,198 @@ const repeatedMessages = new Map();
 const warnings = new Map();
 
 // ====================
-// GREETING RESPONSES
+// RANDOM RESPONSES
 // ====================
 
 const greetingResponses = [
-  "hey there! wsp",
-  "yooo what's good",
-  "heyyy what's up?",
-  "yo yo",
-  "hiii :3 wsp",
-  "ayeee what's good",
-  "hello hello",
-  "yooo wassup",
-  "heyyy, how we doing?",
-  "yo! what's poppin",
-  "hey hey!",
-  "sup bro",
-  "hiiiii, what's up?",
-  "yo what's good",
-  "heyyy there!",
-  "what's good?",
-  "yooo, hey!",
-  "hii! what's up?",
-  "hey bro, wsp?",
-  "yo yo, what's happening?"
+  "Hey there! wsp",
+  "Yooo what's good?",
+  "Heeey! What's up?",
+  "Yo yo!",
+  "Hiii! What's up?",
+  "Ayy what's good?",
+  "Hello hello!",
+  "Yooo wassup",
+  "Heyyy there!",
+  "What's poppin?",
+  "Yo! What's happening?",
+  "Sup bro",
+  "Hiiiii!",
+  "Hey! How's it going?",
+  "Yooo!"
 ];
 
-const greetingWords = [
-  "hi",
-  "hii",
-  "hiii",
-  "hiiii",
-  "hiiiii",
-  "hiiiiii",
-  "hello",
-  "helloo",
-  "hellooo",
-  "helloooo",
-  "hellooooo",
-  "hey",
-  "heyy",
-  "heyyy",
-  "heyyyy",
-  "heyyyyy",
-  "yo",
-  "yoo",
-  "yooo",
-  "yoooo",
-  "yooooo",
-  "sup",
-  "wassup",
-  "whatsup",
-  "what's up",
-  "howdy"
+const howAreYouResponses = [
+  "I'm doing great! How about you?",
+  "I'm chilling, what's good?",
+  "I'm doing pretty good ngl.",
+  "I'm good bro, just chilling in the server.",
+  "Doing great! Thanks for asking.",
+  "I'm chilling. How are you?",
+  "Pretty good over here!",
+  "I'm doing amazing today.",
+  "All good on my end!",
+  "I'm alive and ready to help.",
+  "Doing good! What about you?",
+  "I'm chilling like always.",
+  "Pretty damn good, thanks for asking.",
+  "I'm doing great. What can I help you with?",
+  "I'm doing good!"
 ];
+
+const botResponses = [
+  "Hii!",
+  "Hey there!",
+  "Yo! What's up?",
+  "How can I help you?",
+  "What's good?",
+  "I'm here!",
+  "Yes? What's up?",
+  "What's happening?",
+  "Hii, what do you need?",
+  "Yo yo!",
+  "I'm listening.",
+  "What can I do for you?",
+  "Hey! Need something?",
+  "Sup!",
+  "You called?",
+  "What's up bro?",
+  "Hello there!",
+  "I'm right here!",
+  "Need some help?",
+  "What's good?"
+];
+
+const ipResponses = [
+  "The server IP is **" + SERVER_IP + "**.",
+  "You looking for the server IP? It's **" + SERVER_IP + "**.",
+  "The Thundra SMP IP is **" + SERVER_IP + "**.",
+  "Sure! The IP is **" + SERVER_IP + "**.",
+  "Here you go: **" + SERVER_IP + "**",
+  "Want to join? Use **" + SERVER_IP + "**.",
+  "The Minecraft server address is **" + SERVER_IP + "**.",
+  "Yep, the IP is **" + SERVER_IP + "**. Come join us!",
+  "Server IP: **" + SERVER_IP + "**",
+  "It's **" + SERVER_IP + "**. See you there!"
+];
+
+// ====================
+// RANDOM RESPONSE
+// ====================
+
+function randomResponse(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+// ====================
+// CLEAN MESSAGE
+// ====================
+
+function cleanText(text) {
+  return text
+    .toLowerCase()
+    .replace(/<@!?\d+>/g, " ")
+    .replace(/[.,!?;:'"`()[\]{}]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 // ====================
 // GREETING DETECTOR
 // ====================
 
-function isBotGreeting(message) {
-  let text = message.content.toLowerCase();
+function isGreeting(text) {
+  const greetings = [
+    "hi",
+    "hii",
+    "hiii",
+    "hiiii",
+    "hiiiii",
+    "hello",
+    "helloo",
+    "hellooo",
+    "helloooo",
+    "hey",
+    "heyy",
+    "heyyy",
+    "heyyyy",
+    "yo",
+    "yoo",
+    "yooo",
+    "yoooo",
+    "sup",
+    "wassup",
+    "whatsup",
+    "howdy"
+  ];
 
-  const botWasMentioned = message.mentions.has(client.user);
-
-  // Remove Discord mentions
-  text = text.replace(/<@!?\d+>/g, " ");
-
-  // Remove punctuation
-  text = text.replace(/[.,!?;:'"`()[\]{}]/g, " ");
-
-  // Normalize spaces
-  text = text.replace(/\s+/g, " ").trim();
-
-  // If bot was mentioned, only require a greeting
-  if (botWasMentioned) {
-    return greetingWords.some((greeting) => {
-      return (
-        text === greeting ||
-        text.startsWith(greeting + " ") ||
-        text.endsWith(" " + greeting) ||
-        text.includes(" " + greeting + " ")
-      );
-    });
-  }
-
-  // Without a mention, require "thundra bot"
-  if (!text.includes("thundra bot")) {
-    return false;
-  }
-
-  // Remove bot name
-  const withoutBotName = text
-    .replace(/thundra bot/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return greetingWords.some((greeting) => {
-    return (
-      withoutBotName === greeting ||
-      withoutBotName.startsWith(greeting + " ") ||
-      withoutBotName.endsWith(" " + greeting) ||
-      withoutBotName.includes(" " + greeting + " ")
-    );
+  return greetings.some((word) => {
+    return new RegExp("\\b" + word + "[a-z]*\\b", "i").test(text);
   });
+}
+
+// ====================
+// HOW ARE YOU DETECTOR
+// ====================
+
+function isHowAreYou(text) {
+  const patterns = [
+    "how are you",
+    "how r you",
+    "how r u",
+    "how are u",
+    "how you doing",
+    "how you doin",
+    "how are ya",
+    "how r ya",
+    "how u doing",
+    "how are thundra bot",
+    "how r thundra bot",
+    "how are you thundra bot",
+    "how r u thundra bot",
+    "how are u thundra bot"
+  ];
+
+  return patterns.some((pattern) => text.includes(pattern));
+}
+
+// ====================
+// IP DETECTOR
+// ====================
+
+function isIpQuestion(text) {
+  const hasBotName =
+    text.includes("thundra bot") ||
+    text.includes("thundrabot");
+
+  const ipWords = [
+    "ip",
+    "server ip",
+    "servers ip",
+    "server address",
+    "servers address",
+    "server adress",
+    "servers adress",
+    "minecraft ip",
+    "minecraft server ip"
+  ];
+
+  const askingForIp = ipWords.some((word) =>
+    text.includes(word)
+  );
+
+  return hasBotName && askingForIp;
+}
+
+// ====================
+// BOT NAME DETECTOR
+// ====================
+
+function isBotNameOnly(text) {
+  return (
+    text === "thundra bot" ||
+    text === "thundrabot"
+  );
 }
 
 // ====================
@@ -162,7 +252,7 @@ function isBotGreeting(message) {
 async function sendMuteDM(user, duration, reason) {
   try {
     await user.send(
-      "🔇 You were muted in " +
+      "You were muted in " +
         SERVER_NAME +
         ".\n\n" +
         "Duration: " +
@@ -186,7 +276,7 @@ async function sendMuteDM(user, duration, reason) {
 async function sendMuteOverDM(user) {
   try {
     await user.send(
-      "🔊 Your mute is over in " +
+      "Your mute is over in " +
         SERVER_NAME +
         ".\n\n" +
         "You can talk again now.\n\n" +
@@ -203,36 +293,56 @@ async function sendMuteOverDM(user) {
 // ====================
 
 client.on("messageCreate", async (message) => {
-  // DEBUG LOG
-  console.log("MESSAGE RECEIVED:", message.content);
-
   if (message.author.bot) return;
-  if (!message.member) return;
+  if (!message.guild) return;
+
+  const text = cleanText(message.content);
+  const botWasMentioned = message.mentions.has(client.user);
 
   // ====================
-  // BOT GREETINGS
+  // IP
   // ====================
 
-  if (isBotGreeting(message)) {
-    const response =
-      greetingResponses[
-        Math.floor(Math.random() * greetingResponses.length)
-      ];
-
-    try {
-      await message.reply(response);
-    } catch (error) {
-      console.error("Greeting reply error:", error);
-    }
-
+  if (isIpQuestion(text)) {
+    await message.reply(randomResponse(ipResponses));
     return;
   }
 
-  const now = Date.now();
+  // ====================
+  // HOW ARE YOU
+  // ====================
+
+  if (isHowAreYou(text)) {
+    await message.reply(randomResponse(howAreYouResponses));
+    return;
+  }
 
   // ====================
-  // 5 MESSAGES / 5 SECONDS
+  // GREETING WITH BOT
   // ====================
+
+  if (
+    (text.includes("thundra bot") || botWasMentioned) &&
+    isGreeting(text)
+  ) {
+    await message.reply(randomResponse(greetingResponses));
+    return;
+  }
+
+  // ====================
+  // BOT NAME / PING
+  // ====================
+
+  if (botWasMentioned || isBotNameOnly(text)) {
+    await message.reply(randomResponse(botResponses));
+    return;
+  }
+
+  // ====================
+  // ANTI-SPAM
+  // ====================
+
+  const now = Date.now();
 
   const messages = spam.get(message.author.id) || [];
 
@@ -241,7 +351,6 @@ client.on("messageCreate", async (message) => {
   );
 
   recent.push(now);
-
   spam.set(message.author.id, recent);
 
   if (recent.length >= 5) {
@@ -252,8 +361,7 @@ client.on("messageCreate", async (message) => {
       );
 
       await message.channel.send(
-        "🚫 " +
-          message.author +
+        message.author +
           " was timed out for 5 minutes for spamming."
       );
 
@@ -272,20 +380,15 @@ client.on("messageCreate", async (message) => {
 
       return;
     } catch (error) {
-      console.error(
-        "Could not timeout user:",
-        error
-      );
+      console.error("Anti-spam error:", error);
     }
   }
 
   // ====================
-  // 3 IDENTICAL MESSAGES
+  // REPEATED MESSAGE
   // ====================
 
-  const previous = repeatedMessages.get(
-    message.author.id
-  );
+  const previous = repeatedMessages.get(message.author.id);
 
   if (
     previous &&
@@ -299,9 +402,7 @@ client.on("messageCreate", async (message) => {
     });
   }
 
-  const repeated = repeatedMessages.get(
-    message.author.id
-  );
+  const repeated = repeatedMessages.get(message.author.id);
 
   if (repeated.count >= 3) {
     try {
@@ -311,8 +412,7 @@ client.on("messageCreate", async (message) => {
       );
 
       await message.channel.send(
-        "🚫 " +
-          message.author +
+        message.author +
           " was timed out for 5 minutes for sending the same message 3 times in a row."
       );
 
@@ -329,16 +429,13 @@ client.on("messageCreate", async (message) => {
       spam.delete(message.author.id);
       repeatedMessages.delete(message.author.id);
     } catch (error) {
-      console.error(
-        "Could not timeout user:",
-        error
-      );
+      console.error("Repeated message error:", error);
     }
   }
 });
 
 // ====================
-// WARNINGS
+// WARNING SYSTEM
 // ====================
 
 function getWarnings(userId) {
@@ -478,9 +575,7 @@ const kickCommand = new SlashCommandBuilder()
 // ====================
 
 client.once("ready", async () => {
-  console.log(
-    "Logged in as " + client.user.tag
-  );
+  console.log("Logged in as " + client.user.tag);
 
   const rest = new REST({ version: "10" })
     .setToken(process.env.TOKEN);
@@ -512,9 +607,7 @@ client.once("ready", async () => {
     );
 
     console.log("Old commands removed!");
-    console.log(
-      "All moderation commands registered!"
-    );
+    console.log("All moderation commands registered!");
   } catch (error) {
     console.error(
       "Command registration failed:",
@@ -527,483 +620,404 @@ client.once("ready", async () => {
 // COMMAND HANDLER
 // ====================
 
-client.on(
-  "interactionCreate",
-  async (interaction) => {
-    if (!interaction.isChatInputCommand()) {
-      return;
-    }
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
 
-    // ====================
-    // /UNMUTE
-    // ====================
+  // ====================
+  // /UNMUTE
+  // ====================
 
-    if (interaction.commandName === "unmute") {
-      const user =
-        interaction.options.getUser("user");
+  if (interaction.commandName === "unmute") {
+    const user = interaction.options.getUser("user");
 
-      try {
-        const member =
-          await interaction.guild.members.fetch(
-            user.id
-          );
+    try {
+      const member =
+        await interaction.guild.members.fetch(user.id);
 
-        await member.timeout(
-          null,
-          "Manual unmute"
-        );
-
-        await interaction.reply(
-          "🔊 " +
-            user +
-            " has been unmuted."
-        );
-
-        try {
-          await user.send(
-            "🔊 You were unmuted in " +
-              SERVER_NAME +
-              ".\n\n" +
-              "A moderator removed your mute.\n\n" +
-              "Server: " +
-              INVITE_LINK
-          );
-        } catch (error) {
-          console.log(
-            "Could not DM " + user.tag
-          );
-        }
-      } catch (error) {
-        console.error(
-          "Unmute error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "I could not unmute that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-    // ====================
-    // /WARN
-    // ====================
-
-    if (interaction.commandName === "warn") {
-      const user =
-        interaction.options.getUser("user");
-
-      const reason =
-        interaction.options.getString(
-          "reason"
-        );
-
-      const userWarnings =
-        getWarnings(user.id);
-
-      userWarnings.push({
-        reason: reason,
-        moderator: interaction.user.id,
-        date: new Date()
-      });
-
-      warnings.set(
-        user.id,
-        userWarnings
-      );
+      await member.timeout(null, "Manual unmute");
 
       await interaction.reply(
-        "⚠️ " +
-          user +
-          " has been warned.\n" +
+        user +
+          " has been unmuted."
+      );
+
+      try {
+        await user.send(
+          "You were unmuted in " +
+            SERVER_NAME +
+            ".\n\n" +
+            "A moderator removed your mute.\n\n" +
+            "Server: " +
+            INVITE_LINK
+        );
+      } catch (error) {
+        console.log("Could not DM " + user.tag);
+      }
+    } catch (error) {
+      console.error("Unmute error:", error);
+
+      await interaction.reply({
+        content: "I could not unmute that user.",
+        ephemeral: true
+      });
+    }
+
+    return;
+  }
+
+  // ====================
+  // /WARN
+  // ====================
+
+  if (interaction.commandName === "warn") {
+    const user = interaction.options.getUser("user");
+    const reason = interaction.options.getString("reason");
+
+    const userWarnings = getWarnings(user.id);
+
+    userWarnings.push({
+      reason: reason,
+      moderator: interaction.user.id,
+      date: new Date()
+    });
+
+    warnings.set(user.id, userWarnings);
+
+    await interaction.reply(
+      user +
+        " has been warned.\n" +
+        "Reason: " +
+        reason +
+        "\n" +
+        "Total warnings: " +
+        userWarnings.length
+    );
+
+    try {
+      await user.send(
+        "You received a warning in " +
+          SERVER_NAME +
+          ".\n\n" +
           "Reason: " +
           reason +
           "\n" +
           "Total warnings: " +
-          userWarnings.length
+          userWarnings.length +
+          "\n\n" +
+          "Server: " +
+          INVITE_LINK
       );
-
-      try {
-        await user.send(
-          "⚠️ You received a warning in " +
-            SERVER_NAME +
-            ".\n\n" +
-            "Reason: " +
-            reason +
-            "\n" +
-            "Total warnings: " +
-            userWarnings.length +
-            "\n\n" +
-            "Server: " +
-            INVITE_LINK
-        );
-      } catch (error) {
-        console.log(
-          "Could not DM " + user.tag
-        );
-      }
-
-      return;
+    } catch (error) {
+      console.log("Could not DM " + user.tag);
     }
 
-    // ====================
-    // /WARNINGS
-    // ====================
-
-    if (
-      interaction.commandName ===
-      "warnings"
-    ) {
-      const user =
-        interaction.options.getUser("user");
-
-      const userWarnings =
-        getWarnings(user.id);
-
-      if (userWarnings.length === 0) {
-        await interaction.reply(
-          "📋 " +
-            user +
-            " has no warnings."
-        );
-
-        return;
-      }
-
-      let text =
-        "📋 Warnings for " +
-        user +
-        "\n\n";
-
-      userWarnings.forEach(
-        (warning, index) => {
-          text +=
-            index +
-            1 +
-            ". " +
-            warning.reason +
-            "\n";
-        }
-      );
-
-      await interaction.reply(text);
-
-      return;
-    }
-
-    // ====================
-    // /MUTE
-    // ====================
-
-    if (interaction.commandName === "mute") {
-      const user =
-        interaction.options.getUser("user");
-
-      const duration =
-        interaction.options.getString(
-          "duration"
-        );
-
-      const reason =
-        interaction.options.getString(
-          "reason"
-        ) || "No reason provided";
-
-      const match =
-        duration.match(
-          /^(\d+)(s|m|h|d)$/i
-        );
-
-      if (!match) {
-        await interaction.reply({
-          content:
-            "Invalid duration. Use 30s, 5m, 1h, or 1d.",
-          ephemeral: true
-        });
-
-        return;
-      }
-
-      const amount =
-        parseInt(match[1]);
-
-      const unit =
-        match[2].toLowerCase();
-
-      let milliseconds = 0;
-
-      if (unit === "s") {
-        milliseconds =
-          amount * 1000;
-      } else if (unit === "m") {
-        milliseconds =
-          amount * 60 * 1000;
-      } else if (unit === "h") {
-        milliseconds =
-          amount * 60 * 60 * 1000;
-      } else if (unit === "d") {
-        milliseconds =
-          amount * 24 * 60 * 60 * 1000;
-      }
-
-      if (
-        milliseconds >
-        28 *
-          24 *
-          60 *
-          60 *
-          1000
-      ) {
-        await interaction.reply({
-          content:
-            "Maximum mute duration is 28 days.",
-          ephemeral: true
-        });
-
-        return;
-      }
-
-      try {
-        const member =
-          await interaction.guild.members.fetch(
-            user.id
-          );
-
-        await member.timeout(
-          milliseconds,
-          "Muted by " +
-            interaction.user.tag +
-            ": " +
-            reason
-        );
-
-        await interaction.reply(
-          "🔇 " +
-            user +
-            " has been muted for " +
-            duration +
-            ".\n" +
-            "Reason: " +
-            reason
-        );
-
-        await sendMuteDM(
-          user,
-          duration,
-          reason
-        );
-
-        setTimeout(() => {
-          sendMuteOverDM(user);
-        }, milliseconds);
-      } catch (error) {
-        console.error(
-          "Mute error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "I could not mute that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-    // ====================
-    // /BAN
-    // ====================
-
-    if (interaction.commandName === "ban") {
-      const user =
-        interaction.options.getUser("user");
-
-      const reason =
-        interaction.options.getString(
-          "reason"
-        ) || "No reason provided";
-
-      try {
-        await user.send(
-          "🔨 You were banned from " +
-            SERVER_NAME +
-            ".\n\n" +
-            "Reason: " +
-            reason +
-            "\n\n" +
-            "Server: " +
-            INVITE_LINK
-        );
-      } catch (error) {
-        console.log(
-          "Could not DM " + user.tag
-        );
-      }
-
-      try {
-        await interaction.guild.members.ban(
-          user.id,
-          {
-            reason: reason
-          }
-        );
-
-        await interaction.reply(
-          "🔨 " +
-            user +
-            " has been banned.\n" +
-            "Reason: " +
-            reason
-        );
-      } catch (error) {
-        console.error(
-          "Ban error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "I could not ban that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-    // ====================
-    // /UNBAN
-    // ====================
-
-    if (
-      interaction.commandName ===
-      "unban"
-    ) {
-      const userId =
-        interaction.options.getString(
-          "userid"
-        );
-
-      try {
-        await interaction.guild.members.unban(
-          userId,
-          "Unbanned by " +
-            interaction.user.tag
-        );
-
-        await interaction.reply(
-          "🔓 User " +
-            userId +
-            " has been unbanned."
-        );
-
-        try {
-          const user =
-            await client.users.fetch(
-              userId
-            );
-
-          await user.send(
-            "🔓 You were unbanned from " +
-              SERVER_NAME +
-              ".\n\n" +
-              "A moderator has removed your ban.\n\n" +
-              "Server: " +
-              INVITE_LINK
-          );
-        } catch (error) {
-          console.log(
-            "Could not DM user " +
-              userId
-          );
-        }
-      } catch (error) {
-        console.error(
-          "Unban error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "I could not unban that user. Check the ID and make sure they are banned.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-    // ====================
-    // /KICK
-    // ====================
-
-    if (
-      interaction.commandName ===
-      "kick"
-    ) {
-      const user =
-        interaction.options.getUser("user");
-
-      const reason =
-        interaction.options.getString(
-          "reason"
-        ) || "No reason provided";
-
-      try {
-        await user.send(
-          "👢 You were kicked from " +
-            SERVER_NAME +
-            ".\n\n" +
-            "Reason: " +
-            reason +
-            "\n\n" +
-            "Server: " +
-            INVITE_LINK
-        );
-      } catch (error) {
-        console.log(
-          "Could not DM " + user.tag
-        );
-      }
-
-      try {
-        const member =
-          await interaction.guild.members.fetch(
-            user.id
-          );
-
-        await member.kick(reason);
-
-        await interaction.reply(
-          "👢 " +
-            user +
-            " has been kicked.\n" +
-            "Reason: " +
-            reason
-        );
-      } catch (error) {
-        console.error(
-          "Kick error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "I could not kick that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
+    return;
   }
-);
+
+  // ====================
+  // /WARNINGS
+  // ====================
+
+  if (interaction.commandName === "warnings") {
+    const user = interaction.options.getUser("user");
+    const userWarnings = getWarnings(user.id);
+
+    if (userWarnings.length === 0) {
+      await interaction.reply(
+        user + " has no warnings."
+      );
+
+      return;
+    }
+
+    let text =
+      "Warnings for " +
+      user +
+      "\n\n";
+
+    userWarnings.forEach((warning, index) => {
+      text +=
+        index +
+        1 +
+        ". " +
+        warning.reason +
+        "\n";
+    });
+
+    await interaction.reply(text);
+
+    return;
+  }
+
+  // ====================
+  // /MUTE
+  // ====================
+
+  if (interaction.commandName === "mute") {
+    const user = interaction.options.getUser("user");
+    const duration =
+      interaction.options.getString("duration");
+
+    const reason =
+      interaction.options.getString("reason") ||
+      "No reason provided";
+
+    const match =
+      duration.match(/^(\d+)(s|m|h|d)$/i);
+
+    if (!match) {
+      await interaction.reply({
+        content:
+          "Invalid duration. Use 30s, 5m, 1h, or 1d.",
+        ephemeral: true
+      });
+
+      return;
+    }
+
+    const amount = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+
+    let milliseconds = 0;
+
+    if (unit === "s") {
+      milliseconds = amount * 1000;
+    }
+
+    if (unit === "m") {
+      milliseconds = amount * 60 * 1000;
+    }
+
+    if (unit === "h") {
+      milliseconds =
+        amount * 60 * 60 * 1000;
+    }
+
+    if (unit === "d") {
+      milliseconds =
+        amount * 24 * 60 * 60 * 1000;
+    }
+
+    if (
+      milliseconds >
+      28 * 24 * 60 * 60 * 1000
+    ) {
+      await interaction.reply({
+        content:
+          "Maximum mute duration is 28 days.",
+        ephemeral: true
+      });
+
+      return;
+    }
+
+    try {
+      const member =
+        await interaction.guild.members.fetch(user.id);
+
+      await member.timeout(
+        milliseconds,
+        "Muted by " +
+          interaction.user.tag +
+          ": " +
+          reason
+      );
+
+      await interaction.reply(
+        user +
+          " has been muted for " +
+          duration +
+          ".\n" +
+          "Reason: " +
+          reason
+      );
+
+      await sendMuteDM(
+        user,
+        duration,
+        reason
+      );
+
+      setTimeout(() => {
+        sendMuteOverDM(user);
+      }, milliseconds);
+    } catch (error) {
+      console.error("Mute error:", error);
+
+      await interaction.reply({
+        content:
+          "I could not mute that user.",
+        ephemeral: true
+      });
+    }
+
+    return;
+  }
+
+  // ====================
+  // /BAN
+  // ====================
+
+  if (interaction.commandName === "ban") {
+    const user = interaction.options.getUser("user");
+
+    const reason =
+      interaction.options.getString("reason") ||
+      "No reason provided";
+
+    try {
+      await user.send(
+        "You were banned from " +
+          SERVER_NAME +
+          ".\n\n" +
+          "Reason: " +
+          reason +
+          "\n\n" +
+          "Server: " +
+          INVITE_LINK
+      );
+    } catch (error) {
+      console.log(
+        "Could not DM " +
+          user.tag +
+          " before banning."
+      );
+    }
+
+    try {
+      await interaction.guild.members.ban(
+        user.id,
+        {
+          reason: reason
+        }
+      );
+
+      await interaction.reply(
+        user +
+          " has been banned.\n" +
+          "Reason: " +
+          reason
+      );
+    } catch (error) {
+      console.error("Ban error:", error);
+
+      await interaction.reply({
+        content:
+          "I could not ban that user.",
+        ephemeral: true
+      });
+    }
+
+    return;
+  }
+
+  // ====================
+  // /UNBAN
+  // ====================
+
+  if (interaction.commandName === "unban") {
+    const userId =
+      interaction.options.getString("userid");
+
+    try {
+      await interaction.guild.members.unban(
+        userId,
+        "Unbanned by " +
+          interaction.user.tag
+      );
+
+      await interaction.reply(
+        "User " +
+          userId +
+          " has been unbanned."
+      );
+
+      try {
+        const user =
+          await client.users.fetch(userId);
+
+        await user.send(
+          "You were unbanned from " +
+            SERVER_NAME +
+            ".\n\n" +
+            "A moderator has removed your ban.\n\n" +
+            "Server: " +
+            INVITE_LINK
+        );
+      } catch (error) {
+        console.log(
+          "Could not DM user " +
+            userId
+        );
+      }
+    } catch (error) {
+      console.error("Unban error:", error);
+
+      await interaction.reply({
+        content:
+          "I could not unban that user. Check the ID and make sure they are banned.",
+        ephemeral: true
+      });
+    }
+
+    return;
+  }
+
+  // ====================
+  // /KICK
+  // ====================
+
+  if (interaction.commandName === "kick") {
+    const user = interaction.options.getUser("user");
+
+    const reason =
+      interaction.options.getString("reason") ||
+      "No reason provided";
+
+    try {
+      await user.send(
+        "You were kicked from " +
+          SERVER_NAME +
+          ".\n\n" +
+          "Reason: " +
+          reason +
+          "\n\n" +
+          "Server: " +
+          INVITE_LINK
+      );
+    } catch (error) {
+      console.log(
+        "Could not DM " +
+          user.tag +
+          " before kicking."
+      );
+    }
+
+    try {
+      const member =
+        await interaction.guild.members.fetch(user.id);
+
+      await member.kick(reason);
+
+      await interaction.reply(
+        user +
+          " has been kicked.\n" +
+          "Reason: " +
+          reason
+      );
+    } catch (error) {
+      console.error("Kick error:", error);
+
+      await interaction.reply({
+        content:
+          "I could not kick that user.",
+        ephemeral: true
+      });
+    }
+
+    return;
+  }
+});
 
 // ====================
 // LOGIN
