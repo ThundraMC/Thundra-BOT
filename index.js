@@ -36,6 +36,45 @@ const spam = new Map();
 const repeatedMessages = new Map();
 const warnings = new Map();
 
+// ====================
+// BOT GREETINGS
+// ====================
+
+const greetingResponses = [
+  "hey there! wsp",
+  "yooo what's good",
+  "heyyy what's up?",
+  "yo yo",
+  "hiii :3 wsp",
+  "ayeee what's good",
+  "hello hello",
+  "yooo wassup",
+  "heyyy, how we doing?",
+  "yo! what's poppin",
+  "hey hey!",
+  "sup bro",
+  "hiiiii, what's up?",
+  "yo what's good",
+  "heyyy there!"
+];
+
+const greetingWords = [
+  "hi",
+  "hello",
+  "hey",
+  "yo",
+  "hii",
+  "hiii",
+  "hiiii",
+  "helo",
+  "helloo",
+  "hellooo"
+];
+
+// ====================
+// MUTE DMS
+// ====================
+
 async function sendMuteDM(user, duration, reason) {
   try {
     await user.send(
@@ -71,11 +110,44 @@ async function sendMuteOverDM(user) {
   }
 }
 
+// ====================
+// MESSAGE HANDLER
+// ====================
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!message.member) return;
 
+  // ====================
+  // BOT GREETINGS
+  // ====================
+
+  if (message.mentions.has(client.user)) {
+    const text = message.content
+      .toLowerCase()
+      .replace(/<@!?\d+>/g, "")
+      .trim();
+
+    const isGreeting = greetingWords.some((word) => {
+      return text === word || text.startsWith(word + " ");
+    });
+
+    if (isGreeting) {
+      const response =
+        greetingResponses[
+          Math.floor(Math.random() * greetingResponses.length)
+        ];
+
+      await message.reply(response);
+      return;
+    }
+  }
+
   const now = Date.now();
+
+  // ====================
+  // 5 MESSAGES / 5 SECONDS
+  // ====================
 
   const messages = spam.get(message.author.id) || [];
   const recent = messages.filter((time) => now - time < 5000);
@@ -85,7 +157,10 @@ client.on("messageCreate", async (message) => {
 
   if (recent.length >= 5) {
     try {
-      await message.member.timeout(5 * 60 * 1000, "Anti-spam");
+      await message.member.timeout(
+        5 * 60 * 1000,
+        "Anti-spam"
+      );
 
       await message.channel.send(
         "🚫 " +
@@ -111,6 +186,10 @@ client.on("messageCreate", async (message) => {
       console.error("Could not timeout user:", error);
     }
   }
+
+  // ====================
+  // 3 IDENTICAL MESSAGES
+  // ====================
 
   const previous = repeatedMessages.get(message.author.id);
 
@@ -156,9 +235,17 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+// ====================
+// WARNINGS
+// ====================
+
 function getWarnings(userId) {
   return warnings.get(userId) || [];
 }
+
+// ====================
+// /UNMUTE
+// ====================
 
 const unmuteCommand = new SlashCommandBuilder()
   .setName("unmute")
@@ -169,6 +256,10 @@ const unmuteCommand = new SlashCommandBuilder()
       .setDescription("Select the member to unmute")
       .setRequired(true)
   );
+
+// ====================
+// /WARN
+// ====================
 
 const warnCommand = new SlashCommandBuilder()
   .setName("warn")
@@ -186,6 +277,10 @@ const warnCommand = new SlashCommandBuilder()
       .setRequired(true)
   );
 
+// ====================
+// /WARNINGS
+// ====================
+
 const warningsCommand = new SlashCommandBuilder()
   .setName("warnings")
   .setDescription("View a member's warnings")
@@ -195,6 +290,10 @@ const warningsCommand = new SlashCommandBuilder()
       .setDescription("Select the member")
       .setRequired(true)
   );
+
+// ====================
+// /MUTE
+// ====================
 
 const muteCommand = new SlashCommandBuilder()
   .setName("mute")
@@ -218,6 +317,10 @@ const muteCommand = new SlashCommandBuilder()
       .setRequired(false)
   );
 
+// ====================
+// /BAN
+// ====================
+
 const banCommand = new SlashCommandBuilder()
   .setName("ban")
   .setDescription("Ban a member")
@@ -234,6 +337,10 @@ const banCommand = new SlashCommandBuilder()
       .setRequired(false)
   );
 
+// ====================
+// /UNBAN
+// ====================
+
 const unbanCommand = new SlashCommandBuilder()
   .setName("unban")
   .setDescription("Unban a user")
@@ -243,6 +350,10 @@ const unbanCommand = new SlashCommandBuilder()
       .setDescription("Discord user ID")
       .setRequired(true)
   );
+
+// ====================
+// /KICK
+// ====================
 
 const kickCommand = new SlashCommandBuilder()
   .setName("kick")
@@ -259,6 +370,10 @@ const kickCommand = new SlashCommandBuilder()
       .setDescription("Reason for the kick")
       .setRequired(false)
   );
+
+// ====================
+// REGISTER COMMANDS
+// ====================
 
 client.once("ready", async () => {
   console.log("Logged in as " + client.user.tag);
@@ -299,8 +414,16 @@ client.once("ready", async () => {
   }
 });
 
+// ====================
+// COMMAND HANDLER
+// ====================
+
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+
+  // ====================
+  // /UNMUTE
+  // ====================
 
   if (interaction.commandName === "unmute") {
     const user = interaction.options.getUser("user");
@@ -337,6 +460,10 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
+
+  // ====================
+  // /WARN
+  // ====================
 
   if (interaction.commandName === "warn") {
     const user = interaction.options.getUser("user");
@@ -384,6 +511,10 @@ client.on("interactionCreate", async (interaction) => {
     return;
   }
 
+  // ====================
+  // /WARNINGS
+  // ====================
+
   if (interaction.commandName === "warnings") {
     const user = interaction.options.getUser("user");
     const userWarnings = getWarnings(user.id);
@@ -408,6 +539,10 @@ client.on("interactionCreate", async (interaction) => {
     await interaction.reply(text);
     return;
   }
+
+  // ====================
+  // /MUTE
+  // ====================
 
   if (interaction.commandName === "mute") {
     const user = interaction.options.getUser("user");
@@ -487,6 +622,10 @@ client.on("interactionCreate", async (interaction) => {
     return;
   }
 
+  // ====================
+  // /BAN
+  // ====================
+
   if (interaction.commandName === "ban") {
     const user = interaction.options.getUser("user");
 
@@ -533,6 +672,10 @@ client.on("interactionCreate", async (interaction) => {
     return;
   }
 
+  // ====================
+  // /UNBAN
+  // ====================
+
   if (interaction.commandName === "unban") {
     const userId = interaction.options.getString("userid");
 
@@ -574,6 +717,10 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
+
+  // ====================
+  // /KICK
+  // ====================
 
   if (interaction.commandName === "kick") {
     const user = interaction.options.getUser("user");
