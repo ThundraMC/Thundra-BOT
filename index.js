@@ -1,4 +1,18 @@
+```js
+require("dotenv").config();
+
 const express = require("express");
+const {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  SlashCommandBuilder
+} = require("discord.js");
+
+// ====================
+// RENDER WEB SERVER
+// ====================
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,15 +25,9 @@ app.listen(PORT, () => {
   console.log(`🌐 Web server running on port ${PORT}`);
 });
 
-require("dotenv").config();
-
-const {
-  Client,
-  GatewayIntentBits,
-  REST,
-  Routes,
-  SlashCommandBuilder
-} = require("discord.js");
+// ====================
+// DISCORD CLIENT
+// ====================
 
 const client = new Client({
   intents: [
@@ -30,6 +38,8 @@ const client = new Client({
 });
 
 const SERVER_ID = "1531632541377757224";
+const SERVER_NAME = "Thundra SMP";
+const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
 
 // ====================
 // ANTI-SPAM
@@ -38,6 +48,31 @@ const SERVER_ID = "1531632541377757224";
 const spam = new Map();
 const repeatedMessages = new Map();
 
+async function sendMuteDM(user, duration, reason) {
+  try {
+    await user.send(
+      `🔇 **You were muted in ${SERVER_NAME}.**\n\n` +
+      `**Duration:** ${duration}\n` +
+      `**Reason:** ${reason}\n\n` +
+      `🔗 **Server:** ${INVITE_LINK}`
+    );
+  } catch (error) {
+    console.log(`⚠️ Couldn't DM ${user.tag}.`);
+  }
+}
+
+async function sendMuteOverDM(user) {
+  try {
+    await user.send(
+      `🔊 **Your mute is over in ${SERVER_NAME}.**\n\n` +
+      `You can talk again now. ❤️\n\n` +
+      `🔗 **Server:** ${INVITE_LINK}`
+    );
+  } catch (error) {
+    console.log(`⚠️ Couldn't DM ${user.tag}.`);
+  }
+}
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!message.member) return;
@@ -45,7 +80,7 @@ client.on("messageCreate", async (message) => {
   const now = Date.now();
 
   // ====================
-  // NORMAL ANTI-SPAM
+  // 5 MESSAGES / 5 SECONDS
   // ====================
 
   const messages = spam.get(message.author.id) || [];
@@ -55,7 +90,6 @@ client.on("messageCreate", async (message) => {
 
   spam.set(message.author.id, recent);
 
-  // 5 messages in 5 seconds = 5 minute timeout
   if (recent.length >= 5) {
     try {
       await message.member.timeout(
@@ -66,6 +100,16 @@ client.on("messageCreate", async (message) => {
       await message.channel.send(
         `🚫 ${message.author} was timed out for **5 minutes** for spamming.`
       );
+
+      await sendMuteDM(
+        message.author,
+        "5 minutes",
+        "Spamming"
+      );
+
+      setTimeout(() => {
+        sendMuteOverDM(message.author);
+      }, 5 * 60 * 1000);
 
       spam.delete(message.author.id);
       repeatedMessages.delete(message.author.id);
@@ -78,7 +122,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ====================
-  // REPEATED MESSAGE ANTI-SPAM
+  // 3 IDENTICAL MESSAGES
   // ====================
 
   const previous = repeatedMessages.get(message.author.id);
@@ -94,7 +138,6 @@ client.on("messageCreate", async (message) => {
 
   const repeated = repeatedMessages.get(message.author.id);
 
-  // 3 messages in a row that are EXACTLY the same
   if (repeated.count >= 3) {
     try {
       await message.member.timeout(
@@ -106,6 +149,16 @@ client.on("messageCreate", async (message) => {
         `🚫 ${message.author} was timed out for **5 minutes** for sending the same message 3 times in a row.`
       );
 
+      await sendMuteDM(
+        message.author,
+        "5 minutes",
+        "Sending the same message 3 times in a row"
+      );
+
+      setTimeout(() => {
+        sendMuteOverDM(message.author);
+      }, 5 * 60 * 1000);
+
       spam.delete(message.author.id);
       repeatedMessages.delete(message.author.id);
 
@@ -116,7 +169,7 @@ client.on("messageCreate", async (message) => {
 });
 
 // ====================
-// WARNINGS STORAGE
+// WARNINGS
 // ====================
 
 const warnings = new Map();
@@ -191,6 +244,12 @@ const muteCommand = new SlashCommandBuilder()
       .setName("duration")
       .setDescription("Example: 30s, 5m, 1h, 1d")
       .setRequired(true)
+  )
+  .addStringOption(option =>
+    option
+      .setName("reason")
+      .setDescription("Reason for the mute")
+      .setRequired(false)
   );
 
 // ====================
@@ -258,7 +317,6 @@ client.once("ready", async () => {
     .setToken(process.env.TOKEN);
 
   try {
-    // Delete old global commands
     await rest.put(
       Routes.applicationCommands(client.user.id),
       {
@@ -266,7 +324,6 @@ client.once("ready", async () => {
       }
     );
 
-    // Register server commands
     await rest.put(
       Routes.applicationGuildCommands(
         client.user.id,
@@ -316,6 +373,16 @@ client.on("interactionCreate", async (interaction) => {
         `🔊 ${user} has been **unmuted**.`
       );
 
+      try {
+        await user.send(
+          `🔊 **You were unmuted in ${SERVER_NAME}.**\n\n` +
+          `A moderator removed your mute.\n\n` +
+          `🔗 **Server:** ${INVITE_LINK}`
+        );
+      } catch (error) {
+        console.log(`⚠️ Couldn't DM ${user.tag}.`);
+      }
+
     } catch (error) {
       console.error("❌ Unmute error:", error);
 
@@ -349,6 +416,17 @@ client.on("interactionCreate", async (interaction) => {
       `**Reason:** ${reason}\n` +
       `**Total warnings:** ${userWarnings.length}`
     );
+
+    try {
+      await user.send(
+        `⚠️ **You received a warning in ${SERVER_NAME}.**\n\n` +
+        `**Reason:** ${reason}\n` +
+        `**Total warnings:** ${userWarnings.length}\n\n` +
+        `🔗 **Server:** ${INVITE_LINK}`
+      );
+    } catch (error) {
+      console.log(`⚠️ Couldn't DM ${user.tag}.`);
+    }
   }
 
   // ====================
@@ -382,6 +460,10 @@ client.on("interactionCreate", async (interaction) => {
     const user = interaction.options.getUser("user");
     const duration = interaction.options.getString("duration");
 
+    const reason =
+      interaction.options.getString("reason") ||
+      "No reason provided";
+
     const match = duration.match(/^(\d+)(s|m|h|d)$/i);
 
     if (!match) {
@@ -402,7 +484,6 @@ client.on("interactionCreate", async (interaction) => {
     if (unit === "h") milliseconds = amount * 60 * 60 * 1000;
     if (unit === "d") milliseconds = amount * 24 * 60 * 60 * 1000;
 
-    // Discord timeout maximum = 28 days
     if (milliseconds > 28 * 24 * 60 * 60 * 1000) {
       return interaction.reply({
         content: "❌ Maximum mute duration is **28 days**.",
@@ -415,12 +496,23 @@ client.on("interactionCreate", async (interaction) => {
 
       await member.timeout(
         milliseconds,
-        `Muted by ${interaction.user.tag}`
+        `Muted by ${interaction.user.tag}: ${reason}`
       );
 
       await interaction.reply(
-        `🔇 ${user} has been muted for **${duration}**.`
+        `🔇 ${user} has been muted for **${duration}**.\n` +
+        `**Reason:** ${reason}`
       );
+
+      await sendMuteDM(
+        user,
+        duration,
+        reason
+      );
+
+      setTimeout(async () => {
+        await sendMuteOverDM(user);
+      }, milliseconds);
 
     } catch (error) {
       console.error("❌ Mute error:", error);
@@ -438,9 +530,20 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.commandName === "ban") {
     const user = interaction.options.getUser("user");
+
     const reason =
       interaction.options.getString("reason") ||
       "No reason provided";
+
+    try {
+      await user.send(
+        `🔨 **You were banned from ${SERVER_NAME}.**\n\n` +
+        `**Reason:** ${reason}\n\n` +
+        `🔗 **Server:** ${INVITE_LINK}`
+      );
+    } catch (error) {
+      console.log(`⚠️ Couldn't DM ${user.tag} before banning.`);
+    }
 
     try {
       await interaction.guild.members.ban(user.id, {
@@ -479,6 +582,18 @@ client.on("interactionCreate", async (interaction) => {
         `🔓 User **${userId}** has been **unbanned**.`
       );
 
+      try {
+        const user = await client.users.fetch(userId);
+
+        await user.send(
+          `🔓 **You were unbanned from ${SERVER_NAME}.**\n\n` +
+          `A moderator has removed your ban.\n\n` +
+          `🔗 **Server:** ${INVITE_LINK}`
+        );
+      } catch (error) {
+        console.log(`⚠️ Couldn't DM user ${userId}.`);
+      }
+
     } catch (error) {
       console.error("❌ Unban error:", error);
 
@@ -496,9 +611,20 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.commandName === "kick") {
     const user = interaction.options.getUser("user");
+
     const reason =
       interaction.options.getString("reason") ||
       "No reason provided";
+
+    try {
+      await user.send(
+        `👢 **You were kicked from ${SERVER_NAME}.**\n\n` +
+        `**Reason:** ${reason}\n\n` +
+        `🔗 **Server:** ${INVITE_LINK}`
+      );
+    } catch (error) {
+      console.log(`⚠️ Couldn't DM ${user.tag} before kicking.`);
+    }
 
     try {
       const member = await interaction.guild.members.fetch(user.id);
@@ -526,3 +652,4 @@ client.on("interactionCreate", async (interaction) => {
 // ====================
 
 client.login(process.env.TOKEN);
+```
