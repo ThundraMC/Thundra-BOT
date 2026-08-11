@@ -51,9 +51,6 @@ const repeatedMessages = new Map();
 async function sendMuteDM(user, duration, reason) {
   try {
     await user.send(
-     async function sendMuteDM(user, duration, reason) {
-  try {
-    await user.send(
       "🔇 You were muted in " + SERVER_NAME + ".\n\n" +
       "Duration: " + duration + "\n" +
       "Reason: " + reason + "\n\n" +
@@ -63,17 +60,16 @@ async function sendMuteDM(user, duration, reason) {
     console.log("Couldn't DM " + user.tag);
   }
 }
-}
 
 async function sendMuteOverDM(user) {
   try {
     await user.send(
-      `🔊 **Your mute is over in ${SERVER_NAME}.**\n\n` +
-      `You can talk again now. ❤️\n\n` +
-      `🔗 **Server:** ${INVITE_LINK}`
+      "🔊 Your mute is over in " + SERVER_NAME + ".\n\n" +
+      "You can talk again now. ❤️\n\n" +
+      "🔗 Server: " + INVITE_LINK
     );
   } catch (error) {
-    console.log(`⚠️ Couldn't DM ${user.tag}.`);
+    console.log("Couldn't DM " + user.tag);
   }
 }
 
@@ -84,12 +80,13 @@ client.on("messageCreate", async (message) => {
   const now = Date.now();
 
   // ====================
-  // 5 MESSAGES / 5 SECONDS
+  // NORMAL ANTI-SPAM
+  // 5 messages in 5 seconds
   // ====================
 
   const messages = spam.get(message.author.id) || [];
 
-  const recent = messages.filter(time => now - time < 5000);
+  const recent = messages.filter((time) => now - time < 5000);
   recent.push(now);
 
   spam.set(message.author.id, recent);
@@ -102,7 +99,9 @@ client.on("messageCreate", async (message) => {
       );
 
       await message.channel.send(
-        `🚫 ${message.author} was timed out for **5 minutes** for spamming.`
+        "🚫 " +
+        message.author +
+        " was timed out for **5 minutes** for spamming."
       );
 
       await sendMuteDM(
@@ -121,7 +120,7 @@ client.on("messageCreate", async (message) => {
       return;
 
     } catch (error) {
-      console.error("❌ Couldn't timeout user:", error);
+      console.error("Couldn't timeout user:", error);
     }
   }
 
@@ -150,7 +149,9 @@ client.on("messageCreate", async (message) => {
       );
 
       await message.channel.send(
-        `🚫 ${message.author} was timed out for **5 minutes** for sending the same message 3 times in a row.`
+        "🚫 " +
+        message.author +
+        " was timed out for **5 minutes** for sending the same message 3 times in a row."
       );
 
       await sendMuteDM(
@@ -167,7 +168,7 @@ client.on("messageCreate", async (message) => {
       repeatedMessages.delete(message.author.id);
 
     } catch (error) {
-      console.error("❌ Couldn't timeout user:", error);
+      console.error("Couldn't timeout user:", error);
     }
   }
 });
@@ -189,7 +190,7 @@ function getWarnings(userId) {
 const unmuteCommand = new SlashCommandBuilder()
   .setName("unmute")
   .setDescription("Remove a timeout from a member")
-  .addUserOption(option =>
+  .addUserOption((option) =>
     option
       .setName("user")
       .setDescription("Select the member to unmute")
@@ -203,13 +204,13 @@ const unmuteCommand = new SlashCommandBuilder()
 const warnCommand = new SlashCommandBuilder()
   .setName("warn")
   .setDescription("Warn a member")
-  .addUserOption(option =>
+  .addUserOption((option) =>
     option
       .setName("user")
       .setDescription("Select the member to warn")
       .setRequired(true)
   )
-  .addStringOption(option =>
+  .addStringOption((option) =>
     option
       .setName("reason")
       .setDescription("Reason for the warning")
@@ -223,7 +224,7 @@ const warnCommand = new SlashCommandBuilder()
 const warningsCommand = new SlashCommandBuilder()
   .setName("warnings")
   .setDescription("View a member's warnings")
-  .addUserOption(option =>
+  .addUserOption((option) =>
     option
       .setName("user")
       .setDescription("Select the member")
@@ -237,19 +238,19 @@ const warningsCommand = new SlashCommandBuilder()
 const muteCommand = new SlashCommandBuilder()
   .setName("mute")
   .setDescription("Mute a member")
-  .addUserOption(option =>
+  .addUserOption((option) =>
     option
       .setName("user")
       .setDescription("Select the member to mute")
       .setRequired(true)
   )
-  .addStringOption(option =>
+  .addStringOption((option) =>
     option
       .setName("duration")
       .setDescription("Example: 30s, 5m, 1h, 1d")
       .setRequired(true)
   )
-  .addStringOption(option =>
+  .addStringOption((option) =>
     option
       .setName("reason")
       .setDescription("Reason for the mute")
@@ -263,13 +264,13 @@ const muteCommand = new SlashCommandBuilder()
 const banCommand = new SlashCommandBuilder()
   .setName("ban")
   .setDescription("Ban a member")
-  .addUserOption(option =>
+  .addUserOption((option) =>
     option
       .setName("user")
       .setDescription("Select the member to ban")
       .setRequired(true)
   )
-  .addStringOption(option =>
+  .addStringOption((option) =>
     option
       .setName("reason")
       .setDescription("Reason for the ban")
@@ -283,7 +284,7 @@ const banCommand = new SlashCommandBuilder()
 const unbanCommand = new SlashCommandBuilder()
   .setName("unban")
   .setDescription("Unban a user")
-  .addStringOption(option =>
+  .addStringOption((option) =>
     option
       .setName("userid")
       .setDescription("Discord user ID")
@@ -297,13 +298,13 @@ const unbanCommand = new SlashCommandBuilder()
 const kickCommand = new SlashCommandBuilder()
   .setName("kick")
   .setDescription("Kick a member")
-  .addUserOption(option =>
+  .addUserOption((option) =>
     option
       .setName("user")
       .setDescription("Select the member to kick")
       .setRequired(true)
   )
-  .addStringOption(option =>
+  .addStringOption((option) =>
     option
       .setName("reason")
       .setDescription("Reason for the kick")
@@ -315,12 +316,13 @@ const kickCommand = new SlashCommandBuilder()
 // ====================
 
 client.once("ready", async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
+  console.log("Logged in as " + client.user.tag);
 
   const rest = new REST({ version: "10" })
     .setToken(process.env.TOKEN);
 
   try {
+    // Delete old global commands
     await rest.put(
       Routes.applicationCommands(client.user.id),
       {
@@ -328,6 +330,7 @@ client.once("ready", async () => {
       }
     );
 
+    // Register commands in your server
     await rest.put(
       Routes.applicationGuildCommands(
         client.user.id,
@@ -346,11 +349,11 @@ client.once("ready", async () => {
       }
     );
 
-    console.log("✅ Old commands removed!");
-    console.log("✅ All moderation commands registered!");
+    console.log("Old commands removed!");
+    console.log("All moderation commands registered!");
 
   } catch (error) {
-    console.error("❌ Command registration failed:", error);
+    console.error("Command registration failed:", error);
   }
 });
 
@@ -374,21 +377,21 @@ client.on("interactionCreate", async (interaction) => {
       await member.timeout(null, "Manual unmute");
 
       await interaction.reply(
-        `🔊 ${user} has been **unmuted**.`
+        "🔊 " + user + " has been **unmuted**."
       );
 
       try {
         await user.send(
-          `🔊 **You were unmuted in ${SERVER_NAME}.**\n\n` +
-          `A moderator removed your mute.\n\n` +
-          `🔗 **Server:** ${INVITE_LINK}`
+          "🔊 You were unmuted in " + SERVER_NAME + ".\n\n" +
+          "A moderator removed your mute.\n\n" +
+          "🔗 Server: " + INVITE_LINK
         );
       } catch (error) {
-        console.log(`⚠️ Couldn't DM ${user.tag}.`);
+        console.log("Couldn't DM " + user.tag);
       }
 
     } catch (error) {
-      console.error("❌ Unmute error:", error);
+      console.error("Unmute error:", error);
 
       await interaction.reply({
         content: "❌ I couldn't unmute that user.",
@@ -416,20 +419,30 @@ client.on("interactionCreate", async (interaction) => {
     warnings.set(user.id, userWarnings);
 
     await interaction.reply(
-      `⚠️ ${user} has been **warned**.\n` +
-      `**Reason:** ${reason}\n` +
-      `**Total warnings:** ${userWarnings.length}`
+      "⚠️ " +
+      user +
+      " has been **warned**.\n" +
+      "**Reason:** " +
+      reason +
+      "\n" +
+      "**Total warnings:** " +
+      userWarnings.length
     );
 
     try {
       await user.send(
-        `⚠️ **You received a warning in ${SERVER_NAME}.**\n\n` +
-        `**Reason:** ${reason}\n` +
-        `**Total warnings:** ${userWarnings.length}\n\n` +
-        `🔗 **Server:** ${INVITE_LINK}`
+        "⚠️ You received a warning in " + SERVER_NAME + ".\n\n" +
+        "Reason: " +
+        reason +
+        "\n" +
+        "Total warnings: " +
+        userWarnings.length +
+        "\n\n" +
+        "🔗 Server: " +
+        INVITE_LINK
       );
     } catch (error) {
-      console.log(`⚠️ Couldn't DM ${user.tag}.`);
+      console.log("Couldn't DM " + user.tag);
     }
   }
 
@@ -443,14 +456,19 @@ client.on("interactionCreate", async (interaction) => {
 
     if (userWarnings.length === 0) {
       return interaction.reply(
-        `📋 ${user} has **no warnings**.`
+        "📋 " + user + " has **no warnings**."
       );
     }
 
-    let text = `📋 **Warnings for ${user}**\n\n`;
+    let text = "📋 Warnings for " + user + "\n\n";
 
     userWarnings.forEach((warning, index) => {
-      text += `**${index + 1}.** ${warning.reason}\n`;
+      text +=
+        "**" +
+        (index + 1) +
+        ".** " +
+        warning.reason +
+        "\n";
     });
 
     await interaction.reply(text);
@@ -500,12 +518,20 @@ client.on("interactionCreate", async (interaction) => {
 
       await member.timeout(
         milliseconds,
-        `Muted by ${interaction.user.tag}: ${reason}`
+        "Muted by " +
+        interaction.user.tag +
+        ": " +
+        reason
       );
 
       await interaction.reply(
-        `🔇 ${user} has been muted for **${duration}**.\n` +
-        `**Reason:** ${reason}`
+        "🔇 " +
+        user +
+        " has been muted for **" +
+        duration +
+        "**.\n" +
+        "**Reason:** " +
+        reason
       );
 
       await sendMuteDM(
@@ -514,12 +540,12 @@ client.on("interactionCreate", async (interaction) => {
         reason
       );
 
-      setTimeout(async () => {
-        await sendMuteOverDM(user);
+      setTimeout(() => {
+        sendMuteOverDM(user);
       }, milliseconds);
 
     } catch (error) {
-      console.error("❌ Mute error:", error);
+      console.error("Mute error:", error);
 
       await interaction.reply({
         content: "❌ I couldn't mute that user.",
@@ -541,12 +567,17 @@ client.on("interactionCreate", async (interaction) => {
 
     try {
       await user.send(
-        `🔨 **You were banned from ${SERVER_NAME}.**\n\n` +
-        `**Reason:** ${reason}\n\n` +
-        `🔗 **Server:** ${INVITE_LINK}`
+        "🔨 You were banned from " +
+        SERVER_NAME +
+        ".\n\n" +
+        "Reason: " +
+        reason +
+        "\n\n" +
+        "🔗 Server: " +
+        INVITE_LINK
       );
     } catch (error) {
-      console.log(`⚠️ Couldn't DM ${user.tag} before banning.`);
+      console.log("Couldn't DM " + user.tag + " before banning.");
     }
 
     try {
@@ -555,12 +586,15 @@ client.on("interactionCreate", async (interaction) => {
       });
 
       await interaction.reply(
-        `🔨 ${user} has been **banned**.\n` +
-        `**Reason:** ${reason}`
+        "🔨 " +
+        user +
+        " has been **banned**.\n" +
+        "**Reason:** " +
+        reason
       );
 
     } catch (error) {
-      console.error("❌ Ban error:", error);
+      console.error("Ban error:", error);
 
       await interaction.reply({
         content: "❌ I couldn't ban that user.",
@@ -579,27 +613,32 @@ client.on("interactionCreate", async (interaction) => {
     try {
       await interaction.guild.members.unban(
         userId,
-        `Unbanned by ${interaction.user.tag}`
+        "Unbanned by " + interaction.user.tag
       );
 
       await interaction.reply(
-        `🔓 User **${userId}** has been **unbanned**.`
+        "🔓 User **" +
+        userId +
+        "** has been **unbanned**."
       );
 
       try {
         const user = await client.users.fetch(userId);
 
         await user.send(
-          `🔓 **You were unbanned from ${SERVER_NAME}.**\n\n` +
-          `A moderator has removed your ban.\n\n` +
-          `🔗 **Server:** ${INVITE_LINK}`
+          "🔓 You were unbanned from " +
+          SERVER_NAME +
+          ".\n\n" +
+          "A moderator has removed your ban.\n\n" +
+          "🔗 Server: " +
+          INVITE_LINK
         );
       } catch (error) {
-        console.log(`⚠️ Couldn't DM user ${userId}.`);
+        console.log("Couldn't DM user " + userId);
       }
 
     } catch (error) {
-      console.error("❌ Unban error:", error);
+      console.error("Unban error:", error);
 
       await interaction.reply({
         content:
@@ -622,12 +661,17 @@ client.on("interactionCreate", async (interaction) => {
 
     try {
       await user.send(
-        `👢 **You were kicked from ${SERVER_NAME}.**\n\n` +
-        `**Reason:** ${reason}\n\n` +
-        `🔗 **Server:** ${INVITE_LINK}`
+        "👢 You were kicked from " +
+        SERVER_NAME +
+        ".\n\n" +
+        "Reason: " +
+        reason +
+        "\n\n" +
+        "🔗 Server: " +
+        INVITE_LINK
       );
     } catch (error) {
-      console.log(`⚠️ Couldn't DM ${user.tag} before kicking.`);
+      console.log("Couldn't DM " + user.tag + " before kicking.");
     }
 
     try {
@@ -636,12 +680,15 @@ client.on("interactionCreate", async (interaction) => {
       await member.kick(reason);
 
       await interaction.reply(
-        `👢 ${user} has been **kicked**.\n` +
-        `**Reason:** ${reason}`
+        "👢 " +
+        user +
+        " has been **kicked**.\n" +
+        "**Reason:** " +
+        reason
       );
 
     } catch (error) {
-      console.error("❌ Kick error:", error);
+      console.error("Kick error:", error);
 
       await interaction.reply({
         content: "❌ I couldn't kick that user.",
