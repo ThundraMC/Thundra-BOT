@@ -224,13 +224,13 @@ function cleanText(text) {
 function solveMath(text) {
   let expression = text;
 
-  // Remove Discord mentions
   expression = expression.replace(/<@!?\d+>/g, " ");
 
-  // Remove Thundra Bot regardless of capitalization
-  expression = expression.replace(/thundra\s*bot/gi, " ");
+  expression = expression.replace(
+    /thundra\s*bot/gi,
+    " "
+  );
 
-  // Remove common question phrases
   expression = expression
     .replace(/\bwhat\s+is\b/gi, " ")
     .replace(/\bwhat's\b/gi, " ")
@@ -253,7 +253,6 @@ function solveMath(text) {
     .replace(/\bequal\b/gi, " ")
     .replace(/\bis\b/gi, " ");
 
-  // Multiplication words
   expression = expression
     .replace(/\bmultiplied\s+by\b/gi, "*")
     .replace(/\bmultiply\s+by\b/gi, "*")
@@ -262,13 +261,11 @@ function solveMath(text) {
     .replace(/\bmultiply\b/gi, "*")
     .replace(/\btimes\b/gi, "*");
 
-  // "x" multiplication
   expression = expression.replace(
     /(\d)\s*x\s*(?=\d)/gi,
     "$1*"
   );
 
-  // Division words
   expression = expression
     .replace(/\bdivided\s+by\b/gi, "/")
     .replace(/\bdivide\s+by\b/gi, "/")
@@ -276,24 +273,20 @@ function solveMath(text) {
     .replace(/\bdivide\b/gi, "/")
     .replace(/\bover\b/gi, "/");
 
-  // Addition words
   expression = expression
     .replace(/\bplus\b/gi, "+")
     .replace(/\badd\b/gi, "+")
     .replace(/\badded\s+to\b/gi, "+");
 
-  // Subtraction words
   expression = expression
     .replace(/\bminus\b/gi, "-")
     .replace(/\bsubtract\b/gi, "-")
     .replace(/\bsubtracted\s+by\b/gi, "-");
 
-  // Modulo
   expression = expression
     .replace(/\bmodulo\b/gi, "%")
     .replace(/\bmod\b/gi, "%");
 
-  // Math symbols
   expression = expression
     .replace(/×/g, "*")
     .replace(/✕/g, "*")
@@ -303,14 +296,6 @@ function solveMath(text) {
     .replace(/−/g, "-")
     .replace(/–/g, "-")
     .replace(/—/g, "-");
-
-  // ====================
-  // PERCENTAGES
-  // ====================
-
-  // Example:
-  // 20% of 150
-  // 20 percent of 150
 
   const percentageMatch = expression.match(
     /(\d+(?:\.\d+)?)\s*(?:%|percent)\s*(?:of)\s*(\d+(?:\.\d+)?)/i
@@ -323,19 +308,11 @@ function solveMath(text) {
     return (percent / 100) * number;
   }
 
-  // ====================
-  // REMOVE LEFTOVER WORDS
-  // ====================
-
   expression = expression
     .replace(/\bwhat\b/gi, " ")
     .replace(/\banswer\b/gi, " ")
     .replace(/\bresult\b/gi, " ")
     .replace(/\bquestion\b/gi, " ");
-
-  // ====================
-  // CLEAN EXPRESSION
-  // ====================
 
   expression = expression.replace(
     /[^0-9+\-*/().%^]/g,
@@ -346,17 +323,14 @@ function solveMath(text) {
     return null;
   }
 
-  // Must contain a number
   if (!/\d/.test(expression)) {
     return null;
   }
 
-  // Must contain a math operator
   if (!/[+\-*/%^]/.test(expression)) {
     return null;
   }
 
-  // Prevent division by zero
   if (
     /\/\s*0+(?:\.0*)?(?:$|[+\-*/%^])/g.test(
       expression
@@ -365,26 +339,24 @@ function solveMath(text) {
     return null;
   }
 
-  // Prevent huge expressions
   if (expression.length > 200) {
     return null;
   }
 
-  // Prevent repeated operators
-  if (
-    /[+\-*/%^]{3,}/.test(expression)
-  ) {
+  if (/[+\-*/%^]{3,}/.test(expression)) {
     return null;
   }
 
   try {
-    // Convert ^ into exponentiation
-    expression = expression.replace(/\^/g, "**");
+    expression = expression.replace(
+      /\^/g,
+      "**"
+    );
 
     const result = Function(
       '"use strict"; return (' +
-        expression +
-        ")"
+      expression +
+      ")"
     )();
 
     if (
@@ -415,12 +387,10 @@ function isRepeatedCharacterSpam(text) {
     return false;
   }
 
-  // HIIIIIIIIIIII
   if (/(.)\1{7,}/us.test(compact)) {
     return true;
   }
 
-  // Same emoji/character repeated many times
   const chars = Array.from(compact);
 
   if (chars.length >= 12) {
@@ -448,10 +418,6 @@ function isRepeatedPatternSpam(text) {
   if (compact.length < 12) {
     return false;
   }
-
-  // HIHIHIHIHI
-  // LOLLOLLOL
-  // ABCABCABC
 
   for (let size = 1; size <= 4; size++) {
     if (compact.length < size * 4) {
@@ -553,180 +519,143 @@ function getHelpResponse() {
 }
 
 // ====================
-// SLASH COMMANDS
+// IQ RESPONSES
 // ====================
 
-const unmuteCommand =
-  new SlashCommandBuilder()
-    .setName("unmute")
-    .setDescription(
-      "Remove a timeout from a member"
-    )
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription(
-          "Select the member to unmute"
-        )
-        .setRequired(true)
-    );
+function isIQQuestion(text) {
+  const t = text
+    .toLowerCase()
+    .replace(/[?!.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-const warnCommand =
-  new SlashCommandBuilder()
-    .setName("warn")
-    .setDescription("Warn a member")
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription(
-          "Select the member to warn"
-        )
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName("reason")
-        .setDescription(
-          "Reason for the warning"
-        )
-        .setRequired(true)
-    );
+  return (
+    /\bhow\s+many\s+iq\b/.test(t) ||
+    /\bhow\s+much\s+iq\b/.test(t) ||
+    /\bwhat\s+is\s+your\s+iq\b/.test(t) ||
+    /\bwhat\s+is\s+ur\s+iq\b/.test(t) ||
+    /\bwhats\s+your\s+iq\b/.test(t) ||
+    /\bwhats\s+ur\s+iq\b/.test(t) ||
+    /\bwhat'?s\s+your\s+iq\b/.test(t) ||
+    /\bwhat'?s\s+ur\s+iq\b/.test(t) ||
+    /\byour\s+iq\b/.test(t) ||
+    /\bur\s+iq\b/.test(t) ||
+    /\bhow\s+smart\s+are\s+you\b/.test(t) ||
+    /\bhow\s+smart\s+r\s+you\b/.test(t) ||
+    /\bhow\s+smart\s+are\s+u\b/.test(t)
+  );
+}
 
-const warningsCommand =
-  new SlashCommandBuilder()
-    .setName("warnings")
-    .setDescription(
-      "View a member's warnings"
-    )
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription(
-          "Select the member"
-        )
-        .setRequired(true)
-    );
+function getLoveResponse() {
+  const responses = [
+    "Aww, love you too.",
+    "Love you too bro.",
+    "❤️ right back at you.",
+    "W love.",
+    "You're real for that.",
+    "Ayy, appreciate you."
+  ];
 
-const muteCommand =
-  new SlashCommandBuilder()
-    .setName("mute")
-    .setDescription("Mute a member")
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription(
-          "Select the member to mute"
-        )
-        .setRequired(true)
+  return responses[
+    Math.floor(
+      Math.random() * responses.length
     )
-    .addStringOption(option =>
-      option
-        .setName("duration")
-        .setDescription(
-          "Example: 30s, 5m, 1h, 1d"
-        )
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName("reason")
-        .setDescription(
-          "Reason for the mute"
-        )
-        .setRequired(false)
-    );
+  ];
+}
 
-const banCommand =
-  new SlashCommandBuilder()
-    .setName("ban")
-    .setDescription("Ban a member")
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription(
-          "Select the member to ban"
-        )
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName("reason")
-        .setDescription(
-          "Reason for the ban"
-        )
-        .setRequired(false)
-    );
+function getBotQuestionResponse() {
+  const responses = [
+    "I'm Thundra Bot, your server's little helper.",
+    "I'm Thundra Bot. What did you need?",
+    "Just your friendly neighborhood Thundra Bot.",
+    "I'm the bot around here.",
+    "Thundra Bot reporting for duty."
+  ];
 
-const unbanCommand =
-  new SlashCommandBuilder()
-    .setName("unban")
-    .setDescription("Unban a user")
-    .addStringOption(option =>
-      option
-        .setName("userid")
-        .setDescription(
-          "Discord user ID"
-        )
-        .setRequired(true)
-    );
-
-const kickCommand =
-  new SlashCommandBuilder()
-    .setName("kick")
-    .setDescription("Kick a member")
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription(
-          "Select the member to kick"
-        )
-        .setRequired(true)
+  return responses[
+    Math.floor(
+      Math.random() * responses.length
     )
-    .addStringOption(option =>
-      option
-        .setName("reason")
-        .setDescription(
-          "Reason for the kick"
-        )
-        .setRequired(false)
-    );
+  ];
+}
 
-const afkCommand =
-  new SlashCommandBuilder()
-    .setName("afk")
-    .setDescription(
-      "Set your AFK status"
+function getThanksResponse() {
+  const responses = [
+    "No problem!",
+    "Anytime.",
+    "You got it.",
+    "Of course!",
+    "Np bro.",
+    "Always."
+  ];
+
+  return responses[
+    Math.floor(
+      Math.random() * responses.length
     )
-    .addStringOption(option =>
-      option
-        .setName("reason")
-        .setDescription(
-          "Why you are AFK"
-        )
-        .setRequired(true)
-    );
+  ];
+}
+
+function getJokeResponse() {
+  const responses = [
+    "Why did the Minecraft player bring a ladder? To get to the next level.",
+    "I would tell you a UDP joke, but you might not get it.",
+    "Why did the creeper cross the road? To get closer to the player.",
+    "My code never crashes. It just takes unexpected vacations.",
+    "Why don't bots ever get tired? We have no sleep schedule."
+  ];
+
+  return responses[
+    Math.floor(
+      Math.random() * responses.length
+    )
+  ];
+}
 
 // ====================
-// REGISTER COMMANDS
+// DISCORD READY
 // ====================
 
 client.once("ready", async () => {
   console.log(
-    "Logged in as " + client.user.tag
+    "Logged in as " +
+    client.user.tag
   );
 
-  const rest = new REST({
-    version: "10"
-  }).setToken(process.env.TOKEN);
+  console.log(
+    "Thundra Bot is online."
+  );
+
+  client.user.setActivity(
+    "Thundra SMP",
+    {
+      type: 0
+    }
+  );
+
+  // ====================
+  // SLASH COMMANDS
+  // ====================
+
+  const commands = [
+    new SlashCommandBuilder()
+      .setName("afk")
+      .setDescription("Set your AFK status")
+      .addStringOption(option =>
+        option
+          .setName("reason")
+          .setDescription("Why are you AFK?")
+          .setRequired(true)
+      )
+  ].map(command =>
+    command.toJSON()
+  );
 
   try {
-    await rest.put(
-      Routes.applicationCommands(
-        client.user.id
-      ),
-      {
-        body: []
-      }
+    const rest = new REST({
+      version: "10"
+    }).setToken(
+      process.env.TOKEN
     );
 
     await rest.put(
@@ -735,32 +664,102 @@ client.once("ready", async () => {
         SERVER_ID
       ),
       {
-        body: [
-          unmuteCommand.toJSON(),
-          warnCommand.toJSON(),
-          warningsCommand.toJSON(),
-          muteCommand.toJSON(),
-          banCommand.toJSON(),
-          unbanCommand.toJSON(),
-          kickCommand.toJSON(),
-          afkCommand.toJSON()
-        ]
+        body: commands
       }
     );
 
     console.log(
-      "Commands registered successfully."
+      "Slash commands registered."
     );
   } catch (error) {
     console.error(
-      "Command registration failed:",
+      "Failed to register slash commands:",
       error
     );
   }
 });
 
 // ====================
-// MESSAGE HANDLER
+// SLASH COMMAND HANDLER
+// ====================
+
+client.on(
+  "interactionCreate",
+  async interaction => {
+    if (!interaction.isChatInputCommand()) {
+      return;
+    }
+
+    // ====================
+    // AFK
+    // ====================
+
+    if (
+      interaction.commandName ===
+      "afk"
+    ) {
+      const member =
+        interaction.member;
+
+      if (
+        !member ||
+        !hasAllowedBasicRole(member)
+      ) {
+        await interaction.reply({
+          content:
+            "❌ You need the " +
+            MEMBER_ROLE_NAME +
+            " role to use `/afk`.",
+          ephemeral: true
+        });
+
+        return;
+      }
+
+      const reason =
+        interaction.options.getString(
+          "reason"
+        );
+
+      if (!reason) {
+        await interaction.reply({
+          content:
+            "❌ You need to provide an AFK reason.",
+          ephemeral: true
+        });
+
+        return;
+      }
+
+      afkUsers.set(
+        interaction.user.id,
+        {
+          reason: reason,
+          since: Date.now()
+        }
+      );
+
+      // Private confirmation
+      await interaction.reply({
+        content:
+          "You are now AFK: " +
+          reason,
+        ephemeral: true
+      });
+
+      // Public AFK announcement
+      await interaction.channel.send(
+        displayName(member) +
+        " is now AFK."
+      );
+
+      return;
+    }
+  }
+);
+
+// ====================
+// MESSAGE CREATE
 // ====================
 
 client.on(
@@ -770,101 +769,18 @@ client.on(
       return;
     }
 
-    if (
-      !message.guild ||
-      !message.member
-    ) {
+    if (!message.guild) {
       return;
     }
 
-    const now = Date.now();
-    const authorId =
-      message.author.id;
+    const member =
+      message.member;
+
     const content =
       message.content || "";
 
-    // ====================
-    // REMOVE AFK WHEN THEY TALK
-    // ====================
-
-    if (afkUsers.has(authorId)) {
-      const oldAfk =
-        afkUsers.get(authorId);
-
-      afkUsers.delete(authorId);
-
-      if (oldAfk.timer) {
-        clearTimeout(oldAfk.timer);
-      }
-
-      const name =
-        displayName(message.member);
-
-      await message.channel.send({
-        content:
-          name +
-          " is no longer AFK.",
-        allowedMentions: {
-          users: [],
-          roles: [],
-          repliedUser: false
-        }
-      });
-    }
-
-    // ====================
-    // AFK PING CHECK
-    // ====================
-
-    for (
-      const [userId, afk]
-      of afkUsers
-    ) {
-      if (
-        message.mentions.users.has(
-          userId
-        )
-      ) {
-        try {
-          const member =
-            await message.guild.members
-              .fetch(userId)
-              .catch(() => null);
-
-          const name =
-            displayName(
-              member || afk.user
-            );
-
-          // Sends ONLY in the server channel.
-          // Does NOT DM.
-          // Does NOT ping the AFK person.
-
-          await message.channel.send({
-            content:
-              name +
-              " is AFK: " +
-              afk.reason,
-            allowedMentions: {
-              users: [],
-              roles: [],
-              repliedUser: false
-            }
-          });
-        } catch (error) {
-          console.error(
-            "Couldn't send AFK response:",
-            error
-          );
-        }
-
-        break;
-      }
-    }
-
-    // ====================
-    // BOT NAME / MENTION
-    // ====================
+    const cleaned =
+      cleanText(content);
 
     const botMentioned =
       message.mentions.users.has(
@@ -872,29 +788,363 @@ client.on(
       );
 
     const hasThundraBot =
-      /thundra\s*bot/i.test(
+      /\bthundra\s*bot\b/i.test(
         content
       );
+
+    // ====================
+    // AFK RETURN
+    // ====================
+
+    if (
+      afkUsers.has(
+        message.author.id
+      )
+    ) {
+      const afkData =
+        afkUsers.get(
+          message.author.id
+        );
+
+      afkUsers.delete(
+        message.author.id
+      );
+
+      await message.channel.send(
+        displayName(member) +
+        " is no longer AFK."
+      );
+    }
+
+    // ====================
+    // AFK PING CHECK
+    // ====================
+
+    for (
+      const mentionedUser of
+      message.mentions.users.values()
+    ) {
+      if (
+        mentionedUser.id ===
+        message.author.id
+      ) {
+        continue;
+      }
+
+      if (
+        !afkUsers.has(
+          mentionedUser.id
+        )
+      ) {
+        continue;
+      }
+
+      const afkData =
+        afkUsers.get(
+          mentionedUser.id
+        );
+
+      let afkMember = null;
+
+      try {
+        afkMember =
+          await message.guild.members.fetch(
+            mentionedUser.id
+          );
+      } catch {
+        afkMember = null;
+      }
+
+      const name =
+        displayName(
+          afkMember ||
+          mentionedUser
+        );
+
+      // IMPORTANT:
+      // This is a normal channel message.
+      // Discord does not support ephemeral
+      // messageCreate responses.
+      await message.channel.send(
+        name +
+        " is AFK: " +
+        afkData.reason
+      );
+    }
+
+    // ====================
+    // REPEATED CHARACTER SPAM
+    // ====================
+
+    if (
+      isRepeatedCharacterSpam(
+        content
+      ) ||
+      isRepeatedPatternSpam(
+        content
+      )
+    ) {
+      const now = Date.now();
+
+      const userData =
+        spam.get(
+          message.author.id
+        ) || {
+          count: 0,
+          last: 0
+        };
+
+      if (
+        now - userData.last <
+        15000
+      ) {
+        userData.count++;
+      } else {
+        userData.count = 1;
+      }
+
+      userData.last = now;
+
+      spam.set(
+        message.author.id,
+        userData
+      );
+
+      if (
+        userData.count >= 2
+      ) {
+        try {
+          await message.delete();
+        } catch {}
+
+        try {
+          await muteMember(
+            member,
+            5 * 60 * 1000,
+            "Repeated spam"
+          );
+
+          await message.channel.send(
+            displayName(member) +
+            " has been muted for 5 minutes for spam."
+          );
+        } catch (error) {
+          console.error(
+            "Spam mute error:",
+            error
+          );
+        }
+
+        spam.delete(
+          message.author.id
+        );
+
+        return;
+      }
+
+      try {
+        await message.delete();
+      } catch {}
+
+      return;
+    }
+
+    // ====================
+    // REPEATED SAME MESSAGE
+    // ====================
+
+    const normalizedMessage =
+      content
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (
+      normalizedMessage.length > 0
+    ) {
+      const now = Date.now();
+
+      const data =
+        repeatedMessages.get(
+          message.author.id
+        ) || {
+          message: "",
+          count: 0,
+          last: 0
+        };
+
+      if (
+        data.message ===
+          normalizedMessage &&
+        now - data.last < 15000
+      ) {
+        data.count++;
+      } else {
+        data.message =
+          normalizedMessage;
+        data.count = 1;
+      }
+
+      data.last = now;
+
+      repeatedMessages.set(
+        message.author.id,
+        data
+      );
+
+      if (
+        data.count >= 3
+      ) {
+        try {
+          await message.delete();
+        } catch {}
+
+        try {
+          await muteMember(
+            member,
+            5 * 60 * 1000,
+            "Repeated messages"
+          );
+
+          await message.channel.send(
+            displayName(member) +
+            " has been muted for 5 minutes for repeated messages."
+          );
+        } catch (error) {
+          console.error(
+            "Repeated message mute error:",
+            error
+          );
+        }
+
+        repeatedMessages.delete(
+          message.author.id
+        );
+
+        return;
+      }
+    }
+
+    // ====================
+    // REPEATED PINGS
+    // ====================
+
+    if (
+      message.mentions.users.size >
+      0
+    ) {
+      for (
+        const target of
+        message.mentions.users.values()
+      ) {
+        if (
+          target.id ===
+          message.author.id
+        ) {
+          continue;
+        }
+
+        const key =
+          message.author.id +
+          ":" +
+          target.id;
+
+        const now = Date.now();
+
+        const pingData =
+          repeatedPings.get(
+            key
+          ) || {
+            count: 0,
+            last: 0
+          };
+
+        if (
+          now - pingData.last <
+          15000
+        ) {
+          pingData.count++;
+        } else {
+          pingData.count = 1;
+        }
+
+        pingData.last = now;
+
+        repeatedPings.set(
+          key,
+          pingData
+        );
+
+        if (
+          pingData.count >= 3
+        ) {
+          try {
+            await muteMember(
+              member,
+              5 * 60 * 1000,
+              "Repeatedly pinging the same person"
+            );
+
+            await message.channel.send(
+              displayName(member) +
+              " has been muted for 5 minutes for repeated pinging."
+            );
+          } catch (error) {
+            console.error(
+              "Ping mute error:",
+              error
+            );
+          }
+
+          repeatedPings.delete(
+            key
+          );
+
+          return;
+        }
+      }
+    }
 
     // ====================
     // MATH
     // ====================
 
-    const mathResult =
-      solveMath(content);
+    if (
+      botMentioned ||
+      hasThundraBot
+    ) {
+      const mathResult =
+        solveMath(content);
+
+      if (
+        mathResult !== null
+      ) {
+        await message.reply({
+          content:
+            "🧮 The answer is **" +
+            mathResult +
+            "**",
+          allowedMentions: {
+            repliedUser: false
+          }
+        });
+
+        return;
+      }
+    }
+
+    // ====================
+    // IQ
+    // ====================
 
     if (
-      mathResult !== null &&
-      (
-        botMentioned ||
-        hasThundraBot
-      )
+      (botMentioned ||
+        hasThundraBot) &&
+      isIQQuestion(content)
     ) {
       await message.reply({
         content:
-          "🧮 The answer is **" +
-          mathResult +
-          "**",
+          "https://klipy.com/gifs/iq-smart",
         allowedMentions: {
           repliedUser: false
         }
@@ -907,113 +1157,19 @@ client.on(
     // BOT RESPONSES
     // ====================
 
-    const cleaned =
-      cleanText(content);
-
-    const botUsername =
-      cleanText(
-        client.user.username
-      );
-
-    const botMember =
-      message.guild.members.me;
-
-    const botDisplayName =
-      cleanText(
-        botMember
-          ? botMember.displayName
-          : client.user.username
-      );
-
-    const hasBotName =
-      cleaned.includes(
-        botUsername
-      ) ||
-      cleaned.includes(
-        botDisplayName
-      ) ||
-      hasThundraBot;
-
-    const words =
-      cleaned
-        .split(" ")
-        .filter(Boolean);
-
-    const onlyBotPing =
-      botMentioned &&
-      words.length === 0;
-
-    const greetingWords = [
-      "hi",
-      "hii",
-      "hiii",
-      "hiiii",
-      "hiiiii",
-      "hello",
-      "helloo",
-      "hellooo",
-      "hey",
-      "heyy",
-      "heyyy",
-      "yo",
-      "yoo",
-      "yooo",
-      "sup",
-      "wsp",
-      "wassup",
-      "what's up",
-      "whats up"
-    ];
-
-    const howAreYou =
-      /\bhow\s*(are|r)\s*(you|u)\b/i.test(
-        cleaned
-      ) ||
-      /\bhru\b/i.test(cleaned);
-
-    const asksIp =
-      /\b(ip|server ip|servers ip|server's ip|server address|address)\b/i.test(
-        cleaned
-      );
-
-    const asksHelp =
-      /\b(help|need help|can you help|can u help|could you help|could u help)\b/i.test(
-        cleaned
-      );
-
-    const saysGreeting =
-      greetingWords.some(word =>
-        cleaned === word ||
-        cleaned.startsWith(
-          word + " "
-        )
-      );
-
     if (
       botMentioned ||
-      hasBotName
+      hasThundraBot
     ) {
-      // ====================
-      // SERVER IP
-      // ====================
-
-      if (asksIp) {
-        await message.reply({
-          content:
-            "The server IP is **ThundraPVP.aternos.me**",
-          allowedMentions: {
-            repliedUser: false
-          }
-        });
-
-        return;
-      }
-
-      // ====================
+      // --------------------
       // HOW ARE YOU
-      // ====================
+      // --------------------
 
-      if (howAreYou) {
+      if (
+        /\bhow\s+(are|r)\s+(you|u)\b/i.test(
+          cleaned
+        )
+      ) {
         await message.reply({
           content:
             getHowAreYouResponse(),
@@ -1025,11 +1181,135 @@ client.on(
         return;
       }
 
-      // ====================
-      // HELP
-      // ====================
+      // --------------------
+      // LOVE
+      // --------------------
 
-      if (asksHelp) {
+      if (
+        /\b(i\s+love\s+you|love\s+you|luv\s+you|luv\s+u)\b/i.test(
+          cleaned
+        )
+      ) {
+        await message.reply({
+          content:
+            getLoveResponse(),
+          allowedMentions: {
+            repliedUser: false
+          }
+        });
+
+        return;
+      }
+
+      // --------------------
+      // THANKS
+      // --------------------
+
+      if (
+        /\b(thanks|thank\s+you|thx|ty|tysm|thank\s+u)\b/i.test(
+          cleaned
+        )
+      ) {
+        await message.reply({
+          content:
+            getThanksResponse(),
+          allowedMentions: {
+            repliedUser: false
+          }
+        });
+
+        return;
+      }
+
+      // --------------------
+      // JOKE
+      // --------------------
+
+      if (
+        /\b(tell\s+me\s+a\s+joke|tell\s+a\s+joke|joke)\b/i.test(
+          cleaned
+        )
+      ) {
+        await message.reply({
+          content:
+            getJokeResponse(),
+          allowedMentions: {
+            repliedUser: false
+          }
+        });
+
+        return;
+      }
+
+      // --------------------
+      // WHO ARE YOU
+      // --------------------
+
+      if (
+        /\b(who\s+are\s+you|what\s+are\s+you|what\s+is\s+your\s+name|whats\s+your\s+name)\b/i.test(
+          cleaned
+        )
+      ) {
+        await message.reply({
+          content:
+            getBotQuestionResponse(),
+          allowedMentions: {
+            repliedUser: false
+          }
+        });
+
+        return;
+      }
+
+      // --------------------
+      // ARE YOU AI
+      // --------------------
+
+      if (
+        /\b(are\s+you\s+a\s+bot|are\s+you\s+ai|are\s+you\s+an\s+ai|you\s+a\s+bot|ur\s+a\s+bot)\b/i.test(
+          cleaned
+        )
+      ) {
+        await message.reply({
+          content:
+            "Yeah bro, I'm literally Thundra Bot.",
+          allowedMentions: {
+            repliedUser: false
+          }
+        });
+
+        return;
+      }
+
+      // --------------------
+      // ARE YOU ONLINE
+      // --------------------
+
+      if (
+        /\b(are\s+you\s+online|you\s+online|r\s+you\s+online|u\s+online)\b/i.test(
+          cleaned
+        )
+      ) {
+        await message.reply({
+          content:
+            "Yep, I'm online and chilling.",
+          allowedMentions: {
+            repliedUser: false
+          }
+        });
+
+        return;
+      }
+
+      // --------------------
+      // HELP
+      // --------------------
+
+      if (
+        /\b(help|help\s+me|what\s+can\s+you\s+do|what\s+do\s+you\s+do)\b/i.test(
+          cleaned
+        )
+      ) {
         await message.reply({
           content:
             getHelpResponse(),
@@ -1041,13 +1321,14 @@ client.on(
         return;
       }
 
-      // ====================
-      // GREETING
-      // ====================
+      // --------------------
+      // GREETINGS
+      // --------------------
 
       if (
-        saysGreeting ||
-        onlyBotPing
+        /\b(hi|hii|hiii|hello|hey|heyy|heyyy|yo|yoo|yooo|wsp|sup|wassup|whats\s+up|what'?s\s+up)\b/i.test(
+          cleaned
+        )
       ) {
         await message.reply({
           content:
@@ -1059,346 +1340,8 @@ client.on(
 
         return;
       }
-    }
 
-    // ====================
-    // 5 MESSAGES IN 5 SECONDS
-    // ====================
-
-    const previousMessages =
-      spam.get(authorId) || [];
-
-    const recent =
-      previousMessages.filter(
-        time =>
-          now - time < 5000
-      );
-
-    recent.push(now);
-
-    spam.set(
-      authorId,
-      recent
-    );
-
-    if (
-      recent.length >= 5
-    ) {
-      try {
-        const duration =
-          5 * 60 * 1000;
-
-        await muteMember(
-          message.member,
-          duration,
-          "Spamming"
-        );
-
-        const name =
-          displayName(
-            message.member
-          );
-
-        await message.channel.send({
-          content:
-            "🚫 " +
-            name +
-            " was timed out for 5 minutes for spamming.",
-          allowedMentions: {
-            users: [],
-            roles: []
-          }
-        });
-
-        spam.delete(
-          authorId
-        );
-
-        repeatedMessages.delete(
-          authorId
-        );
-
-        repeatedPings.delete(
-          authorId
-        );
-
-        return;
-      } catch (error) {
-        console.error(
-          "Couldn't timeout user:",
-          error
-        );
-      }
-    }
-
-    // ====================
-    // 3 IDENTICAL MESSAGES
-    // ====================
-
-    const previous =
-      repeatedMessages.get(
-        authorId
-      );
-
-    if (
-      previous &&
-      previous.content === content
-    ) {
-      previous.count++;
-    } else {
-      repeatedMessages.set(
-        authorId,
-        {
-          content:
-            content,
-          count: 1
-        }
-      );
-    }
-
-    const repeated =
-      repeatedMessages.get(
-        authorId
-      );
-
-    if (
-      repeated.count >= 3
-    ) {
-      try {
-        const duration =
-          5 * 60 * 1000;
-
-        await muteMember(
-          message.member,
-          duration,
-          "Repeated messages"
-        );
-
-        const name =
-          displayName(
-            message.member
-          );
-
-        await message.channel.send({
-          content:
-            "🚫 " +
-            name +
-            " was timed out for 5 minutes for sending the same message 3 times in a row.",
-          allowedMentions: {
-            users: [],
-            roles: []
-          }
-        });
-
-        spam.delete(
-          authorId
-        );
-
-        repeatedMessages.delete(
-          authorId
-        );
-
-        repeatedPings.delete(
-          authorId
-        );
-
-        return;
-      } catch (error) {
-        console.error(
-          "Couldn't timeout user:",
-          error
-        );
-      }
-    }
-
-    // ====================
-    // 3 SAME PINGS IN A ROW
-    // ====================
-
-    const mentionedUsers =
-      message.mentions.users.filter(
-        user =>
-          user.id !==
-          client.user.id
-      );
-
-    const pingIds =
-      mentionedUsers
-        .map(user => user.id)
-        .sort()
-        .join(",");
-
-    if (pingIds) {
-      const previousPing =
-        repeatedPings.get(
-          authorId
-        );
-
-      if (
-        previousPing &&
-        previousPing.ids ===
-          pingIds &&
-        now -
-          previousPing.time <
-          30000
-      ) {
-        previousPing.count++;
-        previousPing.time =
-          now;
-      } else {
-        repeatedPings.set(
-          authorId,
-          {
-            ids:
-              pingIds,
-            count: 1,
-            time:
-              now
-          }
-        );
-      }
-
-      const currentPing =
-        repeatedPings.get(
-          authorId
-        );
-
-      if (
-        currentPing.count >= 3
-      ) {
-        try {
-          const duration =
-            5 * 60 * 1000;
-
-          await muteMember(
-            message.member,
-            duration,
-            "Pinging the same person 3 times in a row"
-          );
-
-          const name =
-            displayName(
-              message.member
-            );
-
-          await message.channel.send({
-            content:
-              "🚫 " +
-              name +
-              " was timed out for 5 minutes for repeatedly pinging the same person.",
-            allowedMentions: {
-              users: [],
-              roles: []
-            }
-          });
-
-          spam.delete(
-            authorId
-          );
-
-          repeatedMessages.delete(
-            authorId
-          );
-
-          repeatedPings.delete(
-            authorId
-          );
-
-          return;
-        } catch (error) {
-          console.error(
-            "Couldn't timeout user:",
-            error
-          );
-        }
-      }
-    } else {
-      repeatedPings.delete(
-        authorId
-      );
-    }
-
-    // ====================
-    // REPEATED LETTER / EMOJI SPAM
-    // ====================
-
-    if (
-      isRepeatedCharacterSpam(
-        content
-      ) ||
-      isRepeatedPatternSpam(
-        content
-      )
-    ) {
-      try {
-        const duration =
-          5 * 60 * 1000;
-
-        await muteMember(
-          message.member,
-          duration,
-          "Repeated characters or spam pattern"
-        );
-
-        const name =
-          displayName(
-            message.member
-          );
-
-        await message.channel.send({
-          content:
-            "🚫 " +
-            name +
-            " was timed out for 5 minutes for spam.",
-          allowedMentions: {
-            users: [],
-            roles: []
-          }
-        });
-
-        spam.delete(
-          authorId
-        );
-
-        repeatedMessages.delete(
-          authorId
-        );
-
-        repeatedPings.delete(
-          authorId
-        );
-
-        return;
-      } catch (error) {
-        console.error(
-          "Couldn't timeout user:",
-          error
-        );
-      }
-    }
-  }
-);
-
-// ====================
-// COMMAND HANDLER
-// ====================
-
-client.on(
-  "interactionCreate",
-  async interaction => {
-    if (
-      !interaction.isChatInputCommand()
-    ) {
-      return;
-    }
-
-    const member =
-      interaction.member;
-
-    const commandName =
-      interaction.commandName;
-
-    // ====================
+        // ====================
     // MEMBER / ADMIN COMMAND LIMIT
     // ====================
 
@@ -1897,7 +1840,7 @@ client.on(
 
         await interaction.reply({
           content:
-            "❌ I couldn't unban that user. Check the ID and make sure they're banned.",
+            "❌ I couldn't unban that user.",
           ephemeral: true
         });
       }
@@ -1905,7 +1848,7 @@ client.on(
       return;
     }
 
-    // ====================
+        // ====================
     // /KICK
     // ====================
 
