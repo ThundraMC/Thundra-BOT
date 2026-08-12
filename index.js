@@ -1916,10 +1916,9 @@ client.on(
         });
       }
 
-     return;
-    }
+    return;
   }
-);
+}
 
 // ====================
 // DISCORD ERROR
