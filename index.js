@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require("discord.js");
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 // ====================
 // RENDER WEB SERVER
@@ -42,6 +42,9 @@ const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
 const MEMBER_ROLE_NAME = "👤・Member";
 const ADMIN_ROLE_NAME = "🛡️・Admin";
 
+// Change this to your welcome channel name or ID
+const WELCOME_CHANNEL_NAME = "🚪︱joins";
+
 // ====================
 // DATA
 // ====================
@@ -51,6 +54,21 @@ const repeatedMessages = new Map();
 const repeatedPings = new Map();
 const warnings = new Map();
 const afkUsers = new Map();
+const cooldowns = new Map();
+
+// ====================
+// COOLDOWN HELPER
+// ====================
+
+const COOLDOWN_MS = 2500;
+
+function isOnCooldown(userId) {
+  const now = Date.now();
+  const last = cooldowns.get(userId) || 0;
+  if (now - last < COOLDOWN_MS) return true;
+  cooldowns.set(userId, now);
+  return false;
+}
 
 // ====================
 // DISPLAY NAME
@@ -287,12 +305,20 @@ function getHowAreYouResponse() {
 
 function getHelpResponse() {
   return (
-    "I can help with a lot! Here's what I do:\n" +
-    "🧮 **Math** — just ask me any calculation\n" +
-    "💬 **Chat** — talk to me, ask questions, whatever's on your mind\n" +
-    "🛡️ **Moderation** — admins can use `/mute`, `/ban`, `/kick`, `/warn` and more\n" +
-    "💤 **AFK** — set yourself AFK with `/afk`\n\n" +
-    "Just mention me or say 'Thundra Bot' and I'll do my best to help!"
+    "Here's everything I can do:\n\n" +
+    "🧮 **Math** — ask me any calculation\n" +
+    "🎱 **8ball** — ask me anything with a `?` after mentioning me\n" +
+    "✂️ **Rock Paper Scissors** — say `rps rock`, `rps paper`, or `rps scissors`\n" +
+    "🪙 **Coin flip** — say `flip a coin` or `coin flip`\n" +
+    "🎲 **Roll dice** — say `roll a dice` or use `/roll`\n" +
+    "⭐ **Rate** — say `rate [anything]` and I'll give it a score\n" +
+    "🔥 **Roast** — say `roast me` if you're feeling brave\n" +
+    "💐 **Compliment** — say `compliment me`\n" +
+    "🤔 **Would you rather** — say `would you rather`\n\n" +
+    "**Slash Commands:**\n" +
+    "`/ping` `/serverinfo` `/userinfo` `/coinflip` `/roll`\n" +
+    "`/afk` `/mute` `/unmute` `/ban` `/unban` `/kick` `/warn` `/warnings` `/clearwarnings`\n\n" +
+    "Just mention me or say 'Thundra Bot' and I'll respond!"
   );
 }
 
@@ -321,7 +347,12 @@ function getJokeResponse() {
     "I would tell you a UDP joke, but you might not get it.",
     "Why did the creeper cross the road? To get closer to the player.",
     "My code never crashes. It just takes unexpected vacations.",
-    "Why don't bots ever get tired? We have no sleep schedule."
+    "Why don't bots ever get tired? We have no sleep schedule.",
+    "I asked my dog what two minus two is. He said nothing.",
+    "Why do programmers prefer dark mode? Because light attracts bugs.",
+    "There are 10 kinds of people: those who understand binary and those who don't.",
+    "Why did the scarecrow win an award? Because he was outstanding in his field.",
+    "I told my computer I needed a break. Now it won't stop sending me Kit-Kat ads."
   ]);
 }
 
@@ -346,16 +377,16 @@ function getInsultResponse() {
 
 function getBoredomResponse() {
   return getRandom([
-    "Bored? Same honestly. Wanna talk about something? I'm all ears.",
-    "Boredom hits different. Chat with me, what's on your mind?",
-    "I'm literally always here if you're bored lol. What's up?",
-    "Tell me something interesting then! Or ask me anything, I'll try my best."
+    "Bored? Try `rps rock` and beat me at rock paper scissors!",
+    "Boredom hits different. Ask me `would you rather` or say `roast me` if you're brave lol.",
+    "I'm literally always here if you're bored. Try asking me to `rate` something!",
+    "Tell me something interesting! Or say `flip a coin` if you can't decide something."
   ]);
 }
 
 function getOpinionResponse() {
   return getRandom([
-    "Honestly? I think whatever feels right to you is probably the move. I'm just a bot so my opinion is limited lol, but I'm rooting for you!",
+    "Honestly? I think whatever feels right to you is probably the move. I'm rooting for you!",
     "I mean, I'd say go with your gut on that one. You know the situation better than I do!",
     "That's a tough call. I don't wanna steer you wrong but I think both options have merit — what's your gut say?",
     "Lowkey I think you already know the answer, you just need someone to back you up lol. You got this."
@@ -367,7 +398,7 @@ function getShouldIResponse() {
     "That's really up to you, but if it feels right and it's not hurting anyone — go for it!",
     "Honestly? If your gut says yes, probably yes. I believe in you.",
     "I can't make that call for you but I think you've got good judgment. Trust yourself!",
-    "Hmm, hard to say without knowing everything about the situation. What's making you second guess it?"
+    "Hmm, hard to say without knowing everything. What's making you second guess it?"
   ]);
 }
 
@@ -383,45 +414,45 @@ function getAdviceResponse() {
 function getAgreementResponse() {
   return getRandom([
     "Right?? Exactly.", "Facts, couldn't agree more.", "Yeah no you're totally right.",
-    "100% agree.", "Exactly my thoughts lol."
+    "100% agree.", "Exactly my thoughts lol.", "Bro facts.", "No cap."
   ]);
 }
 
 function getWhatIsResponse(subject) {
   return getRandom([
-    `Hmm, ${subject}? I'm not a full encyclopedia but from what I know, it's worth looking it up on Google for a solid answer! I'm still learning too.`,
-    `Good question! I don't have a full database, but I'd check Wikipedia or Google for "${subject}" — you'll get a way better answer than me lol.`,
-    `I kinda know about ${subject} but I don't wanna give you wrong info. Google it real quick, should pop right up!`,
-    `Oh that's a good one. For "${subject}" specifically I'd point you to Google or Wikipedia — they'll explain it way better than I can.`
+    `Hmm, ${subject}? I'm not a full encyclopedia but it's worth looking up on Google for a solid answer!`,
+    `Good question! I'd check Wikipedia or Google for "${subject}" — you'll get a way better answer than me lol.`,
+    `I kinda know about ${subject} but I don't wanna give you wrong info. Google it real quick!`,
+    `Oh that's a good one. For "${subject}" specifically I'd point you to Google or Wikipedia.`
   ]);
 }
 
 function getHowToResponse(subject) {
   return getRandom([
-    `For "${subject}" — I'd honestly Google that step by step, YouTube tutorials are great for that kind of thing too!`,
-    `Hmm, how to ${subject}... I think the best move is a quick Google or YouTube search. You'll find a full guide way faster than I can explain it.`,
-    `That's a bit outside what I can walk you through fully, but searching "${subject} tutorial" on Google or YouTube should get you sorted!`,
-    `Good question! For something like that I'd look it up on Google, there's usually a super easy guide out there.`
+    `For "${subject}" — I'd honestly Google that step by step, YouTube tutorials are great for that too!`,
+    `Hmm, how to ${subject}... a quick Google or YouTube search will get you a full guide way faster than I can explain.`,
+    `That's a bit outside what I can walk you through, but searching "${subject} tutorial" on YouTube should sort you out!`,
+    `Good question! For something like that I'd look it up on Google, there's usually an easy guide out there.`
   ]);
 }
 
 function getWhyResponse() {
   return getRandom([
-    "Ooh, a why question. Honestly I'm not sure of the full answer but I'd love to help figure it out — got more context?",
-    "That's a deep one lol. I don't have a perfect answer but if you give me more details I can try my best!",
-    "Why questions are tough! I'm not always sure but I'll try — can you tell me a bit more about what you mean?",
-    "Hmm, not 100% sure on that one. Could you explain a bit more so I can try to help properly?"
+    "Ooh, a why question. Honestly I'm not sure of the full answer — got more context?",
+    "That's a deep one lol. I don't have a perfect answer but if you give me more details I can try!",
+    "Why questions are tough! Can you tell me a bit more about what you mean?",
+    "Hmm, not 100% sure on that one. Could you explain a bit more?"
   ]);
 }
 
 function getSmartFallback(content) {
   if (/\?/.test(content)) {
     return getRandom([
-      "Hmm, that's a good question. I'm not 100% sure but I'll try my best — could you give me a bit more context?",
-      "Ooh I'm not totally sure about that one. For a proper answer I'd Google it, but I'm happy to chat about it!",
+      "Hmm, that's a good question. I'm not 100% sure — could you give me a bit more context?",
+      "Ooh I'm not totally sure about that one. For a proper answer I'd Google it, but I'm happy to chat!",
       "That's a tough one for me to answer fully, but I'm here if you wanna talk it through!",
-      "I wish I had a perfect answer for you! I'm not sure on that one — try Googling it for the best info.",
-      "Hmm, not my area of expertise lol. But I'm listening if you wanna explain more!"
+      "I wish I had a perfect answer! Try Googling it for the best info.",
+      "Not my area of expertise lol. But I'm listening if you wanna explain more!"
     ]);
   }
 
@@ -432,6 +463,132 @@ function getSmartFallback(content) {
     "I'm here! What's going on?",
     "Noted! Anything I can help with?",
     "I got you. What do you need?"
+  ]);
+}
+
+// ====================
+// 8BALL
+// ====================
+
+function get8BallResponse() {
+  return getRandom([
+    "🎱 It is certain.", "🎱 Without a doubt.", "🎱 Yes, definitely.",
+    "🎱 You may rely on it.", "🎱 As I see it, yes.", "🎱 Most likely.",
+    "🎱 Outlook good.", "🎱 Signs point to yes.", "🎱 Reply hazy, try again.",
+    "🎱 Ask again later.", "🎱 Better not tell you now.", "🎱 Cannot predict now.",
+    "🎱 Don't count on it.", "🎱 My reply is no.", "🎱 My sources say no.",
+    "🎱 Outlook not so good.", "🎱 Very doubtful.", "🎱 Absolutely not lol.",
+    "🎱 Bro... no.", "🎱 The stars say yes but I say maybe."
+  ]);
+}
+
+// ====================
+// ROCK PAPER SCISSORS
+// ====================
+
+function playRPS(userChoice) {
+  const choices = ["rock", "paper", "scissors"];
+  const botChoice = getRandom(choices);
+  const emojis = { rock: "🪨", paper: "📄", scissors: "✂️" };
+
+  let result;
+  if (userChoice === botChoice) {
+    result = "It's a tie! 🤝";
+  } else if (
+    (userChoice === "rock" && botChoice === "scissors") ||
+    (userChoice === "paper" && botChoice === "rock") ||
+    (userChoice === "scissors" && botChoice === "paper")
+  ) {
+    result = "You win! 🎉 gg";
+  } else {
+    result = "I win! 😎 better luck next time";
+  }
+
+  return `${emojis[userChoice]} vs ${emojis[botChoice]} — ${result}`;
+}
+
+// ====================
+// COIN FLIP
+// ====================
+
+function flipCoin() {
+  return getRandom(["🪙 Heads!", "🪙 Tails!"]);
+}
+
+// ====================
+// RATE
+// ====================
+
+function rateThings(subject) {
+  const score = Math.floor(Math.random() * 11);
+  const comments = {
+    0: "lol not even close, sorry 💀",
+    1: "yikes... 😬",
+    2: "it's a rough one fr",
+    3: "could be worse I guess",
+    4: "below average but it's something",
+    5: "right in the middle, not bad not great",
+    6: "actually decent!",
+    7: "pretty solid ngl",
+    8: "okay that's genuinely good",
+    9: "lowkey amazing fr",
+    10: "GOATED. absolute perfection 🐐"
+  };
+  return `I rate **${subject}** a **${score}/10** — ${comments[score]}`;
+}
+
+// ====================
+// ROASTS
+// ====================
+
+function getRoast() {
+  return getRandom([
+    "You're like a cloud. When you disappear, it's a beautiful day. ☀️",
+    "I'd roast you harder but my parents told me not to burn trash.",
+    "You're proof that even evolution makes mistakes sometimes.",
+    "Calling you an idiot would be an insult to idiots.",
+    "I'd explain it to you but I left my crayons at home.",
+    "You're not stupid, you just have bad luck thinking.",
+    "If brains were dynamite, you wouldn't have enough to blow your hat off.",
+    "You're a grey sprinkle on a rainbow cupcake.",
+    "I've seen better heads on a cauliflower.",
+    "You have the energy of a participation trophy."
+  ]);
+}
+
+// ====================
+// COMPLIMENTS
+// ====================
+
+function getUserCompliment() {
+  return getRandom([
+    "You're genuinely one of the coolest people in this server. Facts.",
+    "I don't say this to everyone but you've got great vibes. 💯",
+    "You're lowkey awesome, hope you know that.",
+    "Okay but real talk, you seem like a really solid person.",
+    "You're built different in the best way possible. Keep being you.",
+    "Honestly? You're the kind of person that makes the server better just by being here.",
+    "W human. The world needs more people like you.",
+    "You're not just cool, you're genuinely kind too. That's rare."
+  ]);
+}
+
+// ====================
+// WOULD YOU RATHER
+// ====================
+
+function getWouldYouRather() {
+  return getRandom([
+    "Would you rather fight one horse-sized duck 🦆 or 100 duck-sized horses 🐴?",
+    "Would you rather have no internet for a year or no food for a month?",
+    "Would you rather be able to fly but only at walking speed, or be super fast but only on the ground?",
+    "Would you rather always speak in rhymes or always speak in questions?",
+    "Would you rather know when you're going to die or how you're going to die?",
+    "Would you rather lose all your memories or never be able to make new ones?",
+    "Would you rather have unlimited battery on your phone or unlimited data forever?",
+    "Would you rather be able to talk to animals or speak every human language?",
+    "Would you rather it always be summer or always be your favorite season but twice as extreme?",
+    "Would you rather have Minecraft graphics in real life or real life graphics in Minecraft?"
   ]);
 }
 
@@ -464,6 +621,28 @@ client.once("ready", async () => {
 
   const commands = [
     new SlashCommandBuilder()
+      .setName("ping")
+      .setDescription("Check the bot's latency"),
+
+    new SlashCommandBuilder()
+      .setName("serverinfo")
+      .setDescription("Show info about this server"),
+
+    new SlashCommandBuilder()
+      .setName("userinfo")
+      .setDescription("Show info about a user")
+      .addUserOption(o => o.setName("user").setDescription("User to look up").setRequired(false)),
+
+    new SlashCommandBuilder()
+      .setName("coinflip")
+      .setDescription("Flip a coin"),
+
+    new SlashCommandBuilder()
+      .setName("roll")
+      .setDescription("Roll a dice")
+      .addIntegerOption(o => o.setName("sides").setDescription("Number of sides (default 6)").setRequired(false)),
+
+    new SlashCommandBuilder()
       .setName("afk").setDescription("Set your AFK status")
       .addStringOption(o => o.setName("reason").setDescription("Why are you AFK?").setRequired(true)),
 
@@ -479,6 +658,10 @@ client.once("ready", async () => {
     new SlashCommandBuilder()
       .setName("warnings").setDescription("View a member's warnings")
       .addUserOption(o => o.setName("user").setDescription("User to check").setRequired(true)),
+
+    new SlashCommandBuilder()
+      .setName("clearwarnings").setDescription("Clear all warnings for a member")
+      .addUserOption(o => o.setName("user").setDescription("User to clear warnings for").setRequired(true)),
 
     new SlashCommandBuilder()
       .setName("mute").setDescription("Mute a member")
@@ -512,6 +695,27 @@ client.once("ready", async () => {
 });
 
 // ====================
+// MEMBER JOIN — WELCOME
+// ====================
+
+client.on("guildMemberAdd", async member => {
+  const channel = member.guild.channels.cache.find(
+    c => c.name === WELCOME_CHANNEL_NAME && c.isTextBased()
+  );
+  if (!channel) return;
+
+  const welcomeMessages = [
+    `Hey ${member}! Welcome to **${SERVER_NAME}**! Glad you're here 👋`,
+    `${member} just joined the server! Welcome to **${SERVER_NAME}** 🎉`,
+    `Welcome ${member}! Hope you enjoy your time in **${SERVER_NAME}**!`,
+    `Ayy ${member} is here! Welcome to **${SERVER_NAME}** 🙌`,
+    `${member} pulled up! Welcome to **${SERVER_NAME}**, make yourself at home.`
+  ];
+
+  await channel.send(getRandom(welcomeMessages));
+});
+
+// ====================
 // SLASH COMMAND HANDLER
 // ====================
 
@@ -521,7 +725,10 @@ client.on("interactionCreate", async interaction => {
   const commandName = interaction.commandName;
   const member = interaction.member;
 
-  if (!hasAllowedBasicRole(member)) {
+  // Public commands that don't need a role check
+  const publicCommands = ["ping", "serverinfo", "userinfo", "coinflip", "roll"];
+
+  if (!publicCommands.includes(commandName) && !hasAllowedBasicRole(member)) {
     await interaction.reply({
       content: `❌ You need the ${MEMBER_ROLE_NAME} role to use bot commands.`,
       ephemeral: true
@@ -529,13 +736,89 @@ client.on("interactionCreate", async interaction => {
     return;
   }
 
-  const adminCommands = ["unmute", "warn", "warnings", "mute", "ban", "unban", "kick"];
+  const adminCommands = ["unmute", "warn", "warnings", "clearwarnings", "mute", "ban", "unban", "kick"];
 
   if (adminCommands.includes(commandName) && !hasAdminRole(member)) {
     await interaction.reply({
       content: `❌ You need the ${ADMIN_ROLE_NAME} role to use this command.`,
       ephemeral: true
     });
+    return;
+  }
+
+  // /PING
+  if (commandName === "ping") {
+    const sent = await interaction.reply({ content: "Pinging...", fetchReply: true });
+    const latency = sent.createdTimestamp - interaction.createdTimestamp;
+    const apiLatency = Math.round(client.ws.ping);
+    await interaction.editReply(`🏓 Pong!\nBot latency: **${latency}ms**\nAPI latency: **${apiLatency}ms**`);
+    return;
+  }
+
+  // /SERVERINFO
+  if (commandName === "serverinfo") {
+    const guild = interaction.guild;
+    await guild.fetch();
+
+    const embed = new EmbedBuilder()
+      .setTitle(guild.name)
+      .setThumbnail(guild.iconURL())
+      .addFields(
+        { name: "👑 Owner", value: `<@${guild.ownerId}>`, inline: true },
+        { name: "👥 Members", value: `${guild.memberCount}`, inline: true },
+        { name: "📅 Created", value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:D>`, inline: true },
+        { name: "💬 Channels", value: `${guild.channels.cache.size}`, inline: true },
+        { name: "🎭 Roles", value: `${guild.roles.cache.size}`, inline: true },
+        { name: "😀 Emojis", value: `${guild.emojis.cache.size}`, inline: true }
+      )
+      .setColor(0x5865f2)
+      .setFooter({ text: `ID: ${guild.id}` });
+
+    await interaction.reply({ embeds: [embed] });
+    return;
+  }
+
+  // /USERINFO
+  if (commandName === "userinfo") {
+    const user = interaction.options.getUser("user") || interaction.user;
+    const target = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+    const embed = new EmbedBuilder()
+      .setTitle(displayName(target || user))
+      .setThumbnail(user.displayAvatarURL())
+      .addFields(
+        { name: "🏷️ Username", value: user.username, inline: true },
+        { name: "🆔 ID", value: user.id, inline: true },
+        { name: "📅 Account Created", value: `<t:${Math.floor(user.createdTimestamp / 1000)}:D>`, inline: true }
+      )
+      .setColor(0x5865f2);
+
+    if (target) {
+      embed.addFields(
+        { name: "📥 Joined Server", value: `<t:${Math.floor(target.joinedTimestamp / 1000)}:D>`, inline: true },
+        { name: "🎭 Roles", value: target.roles.cache.filter(r => r.name !== "@everyone").map(r => r.name).join(", ") || "None", inline: false }
+      );
+    }
+
+    await interaction.reply({ embeds: [embed] });
+    return;
+  }
+
+  // /COINFLIP
+  if (commandName === "coinflip") {
+    await interaction.reply(flipCoin());
+    return;
+  }
+
+  // /ROLL
+  if (commandName === "roll") {
+    const sides = interaction.options.getInteger("sides") || 6;
+    if (sides < 2 || sides > 1000) {
+      await interaction.reply({ content: "❌ Sides must be between 2 and 1000.", ephemeral: true });
+      return;
+    }
+    const result = Math.floor(Math.random() * sides) + 1;
+    await interaction.reply(`🎲 You rolled a **${result}** (d${sides})`);
     return;
   }
 
@@ -597,6 +880,19 @@ client.on("interactionCreate", async interaction => {
     let text = `📋 Warnings for ${user.username}\n\n`;
     userWarnings.forEach((w, i) => { text += `**${i + 1}.** ${w.reason}\n`; });
     await interaction.reply(text);
+    return;
+  }
+
+  // /CLEARWARNINGS
+  if (commandName === "clearwarnings") {
+    const user = interaction.options.getUser("user", true);
+    const had = (warnings.get(user.id) || []).length;
+    warnings.delete(user.id);
+    await interaction.reply(
+      had > 0
+        ? `🗑️ Cleared **${had}** warning(s) for ${user.username}.`
+        : `${user.username} had no warnings to clear.`
+    );
     return;
   }
 
@@ -706,6 +1002,19 @@ client.on("messageCreate", async message => {
     await message.channel.send(displayName(afkMember || mentionedUser) + " is AFK: " + afkData.reason);
   }
 
+  // AUTO-MOD: BLOCK DISCORD INVITE LINKS (non-admins)
+  if (
+    /discord\.(gg|com\/invite)\/\S+/i.test(content) &&
+    !hasAdminRole(member)
+  ) {
+    try { await message.delete(); } catch {}
+    await message.channel.send({
+      content: `${displayName(member)}, posting invite links is not allowed here.`,
+      allowedMentions: { users: [], roles: [] }
+    });
+    return;
+  }
+
   // REPEATED CHARACTER / PATTERN SPAM
   if (isRepeatedCharacterSpam(content) || isRepeatedPatternSpam(content)) {
     const now = Date.now();
@@ -778,7 +1087,10 @@ client.on("messageCreate", async message => {
 
   if (!botMentioned && !hasThundraBot) return;
 
-  // Typing indicator — makes it feel like the bot is thinking
+  // COOLDOWN CHECK
+  if (isOnCooldown(message.author.id)) return;
+
+  // Typing indicator
   await message.channel.sendTyping();
 
   const reply = async (text) =>
@@ -793,6 +1105,38 @@ client.on("messageCreate", async message => {
   // IQ
   if (isIQQuestion(content)) return reply("https://klipy.com/gifs/iq-smart");
 
+  // ROCK PAPER SCISSORS
+  const rpsMatch = c.match(/\brps\s+(rock|paper|scissors)\b/i);
+  if (rpsMatch) return reply(playRPS(rpsMatch[1].toLowerCase()));
+
+  if (/\b(rock|paper|scissors)\b/i.test(c) && /\bplay\b/i.test(c)) {
+    const choice = c.match(/\b(rock|paper|scissors)\b/i)[1].toLowerCase();
+    return reply(playRPS(choice));
+  }
+
+  // COIN FLIP
+  if (/\b(flip\s+a?\s*coin|coin\s*flip|heads\s+or\s+tails|toss\s+a?\s*coin)\b/i.test(c))
+    return reply(flipCoin());
+
+  // ROLL DICE (message)
+  if (/\b(roll\s+a?\s*(dice|die|d6)|roll\s+\d+)\b/i.test(c)) {
+    const sides = 6;
+    return reply(`🎲 You rolled a **${Math.floor(Math.random() * sides) + 1}**`);
+  }
+
+  // RATE
+  const rateMatch = c.match(/\brate\s+(.+)/i);
+  if (rateMatch) return reply(rateThings(rateMatch[1].trim()));
+
+  // ROAST ME
+  if (/\broast\s+(me|yourself)\b/i.test(c)) return reply(getRoast());
+
+  // COMPLIMENT ME / SOMEONE
+  if (/\bcompliment\s+(me|yourself)\b/i.test(c)) return reply(getUserCompliment());
+
+  // WOULD YOU RATHER
+  if (/\bwould\s+you\s+rather\b/i.test(c)) return reply(getWouldYouRather());
+
   // HOW ARE YOU
   if (/\bhow\s+(are|r)\s+(you|u)\b/i.test(c)) return reply(getHowAreYouResponse());
 
@@ -802,7 +1146,7 @@ client.on("messageCreate", async message => {
   // THANKS
   if (/\b(thanks|thank\s+you|thx|ty|tysm|thank\s+u)\b/i.test(c)) return reply(getThanksResponse());
 
-  // COMPLIMENTS
+  // COMPLIMENTS (toward the bot)
   if (/\b(you('?re| are) (amazing|awesome|great|cool|the best|so smart|smart|helpful|nice|sweet)|good bot|best bot|nice bot)\b/i.test(c))
     return reply(getComplimentResponse());
 
@@ -869,9 +1213,9 @@ client.on("messageCreate", async message => {
   // FAVORITE
   if (/\b(what'?s?\s+your\s+fav(ou?rite)?|do\s+you\s+(like|have\s+a\s+fav))\b/i.test(c))
     return reply(getRandom([
-      "As a bot I don't really have favorites but if I did, I'd probably pick whatever keeps this server running smoothly lol.",
-      "I like helping people out, if that counts as a favorite thing!",
-      "Honestly? I just enjoy being here and chatting with everyone. That's enough for me.",
+      "As a bot I don't really have favorites, but I'd pick whatever keeps this server running smoothly lol.",
+      "I like helping people out, if that counts!",
+      "Honestly? I just enjoy being here and chatting with everyone.",
       "My favorite is when everyone in the server is chill and having a good time lol."
     ]));
 
@@ -917,10 +1261,14 @@ client.on("messageCreate", async message => {
   // WHEN
   if (/\bwhen\s+(is|are|was|were|did|will|does)\b/i.test(c))
     return reply(getRandom([
-      "That I'm not sure about — dates and times aren't really my thing lol. Google should have it though!",
+      "That I'm not sure about — dates and times aren't really my thing lol. Google should have it!",
       "Hmm, not sure on that one. Quick Google search should tell you exactly!",
-      "I wish I knew! Google or Discord announcements would be your best bet for that."
+      "I wish I knew! Google or Discord announcements would be your best bet."
     ]));
+
+  // 8BALL — catch-all for questions
+  if (/\?/.test(content) && /\b(will|should|is|are|do|does|can|would|could|am|has|have|did)\b/i.test(c))
+    return reply(get8BallResponse());
 
   // SMART FALLBACK — never goes silent
   return reply(getSmartFallback(content));
