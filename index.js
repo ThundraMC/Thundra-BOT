@@ -1918,8 +1918,7 @@ client.on(
 
       return;
     }
-  }
-);
+    });
 
 // ====================
 // DISCORD ERROR
