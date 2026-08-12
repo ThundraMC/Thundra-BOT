@@ -95,6 +95,20 @@ function hasAllowedBasicRole(member) {
 }
 
 // ====================
+// ADMIN CHECK
+// ====================
+
+function hasAdminRole(member) {
+  if (!member || !member.roles || !member.roles.cache) {
+    return false;
+  }
+
+  return member.roles.cache.some(
+    role => role.name === ADMIN_ROLE_NAME
+  );
+}
+
+// ====================
 // DURATION PARSER
 // ====================
 
@@ -248,7 +262,6 @@ function solveMath(text) {
     .replace(/\bcould\s+u\b/gi, " ")
     .replace(/\bhow\s+much\s+is\b/gi, " ")
     .replace(/\bequals?\s+to\b/gi, " ")
-    .replace(/\bequal\s+to\b/gi, " ")
     .replace(/\bequals\b/gi, " ")
     .replace(/\bequal\b/gi, " ")
     .replace(/\bis\b/gi, " ");
@@ -331,14 +344,6 @@ function solveMath(text) {
     return null;
   }
 
-  if (
-    /\/\s*0+(?:\.0*)?(?:$|[+\-*/%^])/g.test(
-      expression
-    )
-  ) {
-    return null;
-  }
-
   if (expression.length > 200) {
     return null;
   }
@@ -347,12 +352,11 @@ function solveMath(text) {
     return null;
   }
 
-  try {
-    expression = expression.replace(
-      /\^/g,
-      "**"
-    );
+  if (/\/0+(?:\.0*)?(?:$|[+\-*/%^])/g.test(expression)) {
+    return null;
+  }
 
+  try {
     const result = Function(
       '"use strict"; return (' +
       expression +
@@ -646,6 +650,106 @@ client.once("ready", async () => {
           .setName("reason")
           .setDescription("Why are you AFK?")
           .setRequired(true)
+      ),
+
+    new SlashCommandBuilder()
+      .setName("unmute")
+      .setDescription("Unmute a member")
+      .addUserOption(option =>
+        option
+          .setName("user")
+          .setDescription("User to unmute")
+          .setRequired(true)
+      ),
+
+    new SlashCommandBuilder()
+      .setName("warn")
+      .setDescription("Warn a member")
+      .addUserOption(option =>
+        option
+          .setName("user")
+          .setDescription("User to warn")
+          .setRequired(true)
+      )
+      .addStringOption(option =>
+        option
+          .setName("reason")
+          .setDescription("Reason for warning")
+          .setRequired(true)
+      ),
+
+    new SlashCommandBuilder()
+      .setName("warnings")
+      .setDescription("View a member's warnings")
+      .addUserOption(option =>
+        option
+          .setName("user")
+          .setDescription("User to check")
+          .setRequired(true)
+      ),
+
+    new SlashCommandBuilder()
+      .setName("mute")
+      .setDescription("Mute a member")
+      .addUserOption(option =>
+        option
+          .setName("user")
+          .setDescription("User to mute")
+          .setRequired(true)
+      )
+      .addStringOption(option =>
+        option
+          .setName("duration")
+          .setDescription("Example: 30s, 5m, 1h, 1d")
+          .setRequired(true)
+      )
+      .addStringOption(option =>
+        option
+          .setName("reason")
+          .setDescription("Reason for mute")
+          .setRequired(false)
+      ),
+
+    new SlashCommandBuilder()
+      .setName("ban")
+      .setDescription("Ban a member")
+      .addUserOption(option =>
+        option
+          .setName("user")
+          .setDescription("User to ban")
+          .setRequired(true)
+      )
+      .addStringOption(option =>
+        option
+          .setName("reason")
+          .setDescription("Reason for ban")
+          .setRequired(false)
+      ),
+
+    new SlashCommandBuilder()
+      .setName("unban")
+      .setDescription("Unban a user")
+      .addStringOption(option =>
+        option
+          .setName("userid")
+          .setDescription("Discord user ID")
+          .setRequired(true)
+      ),
+
+    new SlashCommandBuilder()
+      .setName("kick")
+      .setDescription("Kick a member")
+      .addUserOption(option =>
+        option
+          .setName("user")
+          .setDescription("User to kick")
+          .setRequired(true)
+      )
+      .addStringOption(option =>
+        option
+          .setName("reason")
+          .setDescription("Reason for kick")
+          .setRequired(false)
       )
   ].map(command =>
     command.toJSON()
@@ -690,56 +794,112 @@ client.on(
       return;
     }
 
+    const commandName =
+      interaction.commandName;
+
+    const member =
+      interaction.member;
+
     // ====================
-    // AFK
+    // ROLE CHECK
     // ====================
 
     if (
-      interaction.commandName ===
-      "afk"
+      !hasAllowedBasicRole(member)
     ) {
-      const member =
-        interaction.member;
+      await interaction.reply({
+        content:
+          "❌ You need the " +
+          MEMBER_ROLE_NAME +
+          " role to use bot commands.",
+        ephemeral: true
+      });
 
-      if (
-        !member ||
-        !hasAllowedBasicRole(member)
-      ) {
-        await interaction.reply({
-          content:
-            "❌ You need the " +
-            MEMBER_ROLE_NAME +
-            " role to use `/afk`.",
-          ephemeral: true
-        });
+      return;
+    }
 
-        return;
-      }
+    // ====================
+    // ADMIN COMMAND CHECK
+    // ====================
 
+    const adminCommands = [
+      "unmute",
+      "warn",
+      "warnings",
+      "mute",
+      "ban",
+      "unban",
+      "kick"
+    ];
+
+    if (
+      adminCommands.includes(commandName) &&
+      !hasAdminRole(member)
+    ) {
+      await interaction.reply({
+        content:
+          "❌ You need the " +
+          ADMIN_ROLE_NAME +
+          " role to use this command.",
+        ephemeral: true
+      });
+
+      return;
+    }
+
+    // ====================
+    // /AFK
+    // ====================
+
+    if (
+      commandName === "afk"
+    ) {
       const reason =
         interaction.options.getString(
-          "reason"
+          "reason",
+          true
         );
 
-      if (!reason) {
-        await interaction.reply({
-          content:
-            "❌ You need to provide an AFK reason.",
-          ephemeral: true
-        });
+      const oldAfk =
+        afkUsers.get(
+          interaction.user.id
+        );
 
-        return;
+      if (
+        oldAfk &&
+        oldAfk.timer
+      ) {
+        clearTimeout(
+          oldAfk.timer
+        );
       }
+
+      const name =
+        displayName(member);
+
+      const timer =
+        setTimeout(
+          () => {
+            afkUsers.delete(
+              interaction.user.id
+            );
+          },
+          7 *
+            24 *
+            60 *
+            60 *
+            1000
+        );
 
       afkUsers.set(
         interaction.user.id,
         {
           reason: reason,
-          since: Date.now()
+          user: interaction.user,
+          timer: timer
         }
       );
 
-      // Private confirmation
       await interaction.reply({
         content:
           "You are now AFK: " +
@@ -747,11 +907,491 @@ client.on(
         ephemeral: true
       });
 
-      // Public AFK announcement
-      await interaction.channel.send(
-        displayName(member) +
-        " is now AFK."
+      await interaction.channel.send({
+        content:
+          name +
+          " is now AFK.",
+        allowedMentions: {
+          users: [],
+          roles: []
+        }
+      });
+
+      return;
+    }
+
+    // ====================
+    // /UNMUTE
+    // ====================
+
+    if (
+      commandName === "unmute"
+    ) {
+      const user =
+        interaction.options.getUser(
+          "user",
+          true
+        );
+
+      try {
+        const target =
+          await interaction.guild.members.fetch(
+            user.id
+          );
+
+        await target.timeout(
+          null,
+          "Manual unmute"
+        );
+
+        const name =
+          displayName(target);
+
+        await interaction.reply(
+          "🔊 " +
+          name +
+          " has been unmuted."
+        );
+
+        await user
+          .send(
+            "🔊 You were unmuted in " +
+            SERVER_NAME +
+            "."
+          )
+          .catch(
+            () => {}
+          );
+      } catch (error) {
+        console.error(
+          "Unmute error:",
+          error
+        );
+
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "❌ I couldn't unmute that user.",
+            ephemeral: true
+          });
+        }
+      }
+
+      return;
+    }
+
+    // ====================
+    // /WARN
+    // ====================
+
+    if (
+      commandName === "warn"
+    ) {
+      const user =
+        interaction.options.getUser(
+          "user",
+          true
+        );
+
+      const reason =
+        interaction.options.getString(
+          "reason",
+          true
+        );
+
+      const userWarnings =
+        warnings.get(
+          user.id
+        ) || [];
+
+      userWarnings.push({
+        reason: reason,
+        moderator:
+          interaction.user.id,
+        date: new Date()
+      });
+
+      warnings.set(
+        user.id,
+        userWarnings
       );
+
+      await interaction.reply(
+        "⚠️ " +
+        user.username +
+        " has been warned.\n" +
+        "Reason: " +
+        reason +
+        "\n" +
+        "Total warnings: " +
+        userWarnings.length
+      );
+
+      await user
+        .send(
+          "⚠️ You received a warning in " +
+          SERVER_NAME +
+          ".\n\n" +
+          "Reason: " +
+          reason +
+          "\n" +
+          "Total warnings: " +
+          userWarnings.length
+        )
+        .catch(
+          () => {}
+        );
+
+      return;
+    }
+
+    // ====================
+    // /WARNINGS
+    // ====================
+
+    if (
+      commandName === "warnings"
+    ) {
+      const user =
+        interaction.options.getUser(
+          "user",
+          true
+        );
+
+      const userWarnings =
+        warnings.get(
+          user.id
+        ) || [];
+
+      if (
+        userWarnings.length === 0
+      ) {
+        await interaction.reply(
+          user.username +
+          " has no warnings."
+        );
+
+        return;
+      }
+
+      let text =
+        "📋 Warnings for " +
+        user.username +
+        "\n\n";
+
+      userWarnings.forEach(
+        (
+          warning,
+          index
+        ) => {
+          text +=
+            "**" +
+            (index + 1) +
+            ".** " +
+            warning.reason +
+            "\n";
+        }
+      );
+
+      await interaction.reply(
+        text
+      );
+
+      return;
+    }
+
+    // ====================
+    // /MUTE
+    // ====================
+
+    if (
+      commandName === "mute"
+    ) {
+      const user =
+        interaction.options.getUser(
+          "user",
+          true
+        );
+
+      const durationText =
+        interaction.options.getString(
+          "duration",
+          true
+        );
+
+      const reason =
+        interaction.options.getString(
+          "reason"
+        ) ||
+        "No reason provided";
+
+      const milliseconds =
+        parseDuration(
+          durationText
+        );
+
+      if (!milliseconds) {
+        await interaction.reply({
+          content:
+            "❌ Invalid duration. Use 30s, 5m, 1h, or 1d.",
+          ephemeral: true
+        });
+
+        return;
+      }
+
+      if (
+        milliseconds >
+        28 *
+          24 *
+          60 *
+          60 *
+          1000
+      ) {
+        await interaction.reply({
+          content:
+            "❌ Maximum mute duration is 28 days.",
+          ephemeral: true
+        });
+
+        return;
+      }
+
+      try {
+        const target =
+          await interaction.guild.members.fetch(
+            user.id
+          );
+
+        await target.timeout(
+          milliseconds,
+          "Muted by " +
+            interaction.user.tag +
+            ": " +
+            reason
+        );
+
+        const name =
+          displayName(target);
+
+        await interaction.reply(
+          "🔇 " +
+          name +
+          " has been muted for " +
+          durationText +
+          ".\n" +
+          "Reason: " +
+          reason
+        );
+
+        await sendMuteDM(
+          user,
+          durationText,
+          reason
+        );
+
+        setTimeout(
+          () => {
+            sendMuteOverDM(user);
+          },
+          milliseconds
+        );
+      } catch (error) {
+        console.error(
+          "Mute error:",
+          error
+        );
+
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "❌ I couldn't mute that user.",
+            ephemeral: true
+          });
+        }
+      }
+
+      return;
+    }
+
+    // ====================
+    // /BAN
+    // ====================
+
+    if (
+      commandName === "ban"
+    ) {
+      const user =
+        interaction.options.getUser(
+          "user",
+          true
+        );
+
+      const reason =
+        interaction.options.getString(
+          "reason"
+        ) ||
+        "No reason provided";
+
+      await user
+        .send(
+          "🔨 You were banned from " +
+          SERVER_NAME +
+          ".\n\n" +
+          "Reason: " +
+          reason +
+          "\n\n" +
+          "Server: " +
+          INVITE_LINK
+        )
+        .catch(
+          () => {}
+        );
+
+      try {
+        await interaction.guild.members.ban(
+          user.id,
+          {
+            reason: reason
+          }
+        );
+
+        await interaction.reply(
+          "🔨 " +
+          user.username +
+          " has been banned.\n" +
+          "Reason: " +
+          reason
+        );
+      } catch (error) {
+        console.error(
+          "Ban error:",
+          error
+        );
+
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "❌ I couldn't ban that user.",
+            ephemeral: true
+          });
+        }
+      }
+
+      return;
+    }
+
+    // ====================
+    // /UNBAN
+    // ====================
+
+    if (
+      commandName === "unban"
+    ) {
+      const userId =
+        interaction.options.getString(
+          "userid",
+          true
+        );
+
+      try {
+        await interaction.guild.members.unban(
+          userId,
+          "Unbanned by " +
+            interaction.user.tag
+        );
+
+        await interaction.reply(
+          "🔓 User " +
+          userId +
+          " has been unbanned."
+        );
+      } catch (error) {
+        console.error(
+          "Unban error:",
+          error
+        );
+
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "❌ I couldn't unban that user.",
+            ephemeral: true
+          });
+        }
+      }
+
+      return;
+    }
+
+    // ====================
+    // /KICK
+    // ====================
+
+    if (
+      commandName === "kick"
+    ) {
+      const user =
+        interaction.options.getUser(
+          "user",
+          true
+        );
+
+      const reason =
+        interaction.options.getString(
+          "reason"
+        ) ||
+        "No reason provided";
+
+      await user
+        .send(
+          "👢 You were kicked from " +
+          SERVER_NAME +
+          ".\n\n" +
+          "Reason: " +
+          reason +
+          "\n\n" +
+          "Server: " +
+          INVITE_LINK
+        )
+        .catch(
+          () => {}
+        );
+
+      try {
+        const target =
+          await interaction.guild.members.fetch(
+            user.id
+          );
+
+        const name =
+          displayName(target);
+
+        await target.kick(
+          reason
+        );
+
+        await interaction.reply(
+          "👢 " +
+          name +
+          " has been kicked.\n" +
+          "Reason: " +
+          reason
+        );
+      } catch (error) {
+        console.error(
+          "Kick error:",
+          error
+        );
+
+        if (!interaction.replied) {
+          await interaction.reply({
+            content:
+              "❌ I couldn't kick that user.",
+            ephemeral: true
+          });
+        }
+      }
 
       return;
     }
@@ -783,6 +1423,7 @@ client.on(
       cleanText(content);
 
     const botMentioned =
+      client.user &&
       message.mentions.users.has(
         client.user.id
       );
@@ -805,6 +1446,15 @@ client.on(
         afkUsers.get(
           message.author.id
         );
+
+      if (
+        afkData &&
+        afkData.timer
+      ) {
+        clearTimeout(
+          afkData.timer
+        );
+      }
 
       afkUsers.delete(
         message.author.id
@@ -861,10 +1511,6 @@ client.on(
           mentionedUser
         );
 
-      // IMPORTANT:
-      // This is a normal channel message.
-      // Discord does not support ephemeral
-      // messageCreate responses.
       await message.channel.send(
         name +
         " is AFK: " +
@@ -1161,9 +1807,9 @@ client.on(
       botMentioned ||
       hasThundraBot
     ) {
-      // --------------------
+      // ====================
       // HOW ARE YOU
-      // --------------------
+      // ====================
 
       if (
         /\bhow\s+(are|r)\s+(you|u)\b/i.test(
@@ -1181,9 +1827,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // LOVE
-      // --------------------
+      // ====================
 
       if (
         /\b(i\s+love\s+you|love\s+you|luv\s+you|luv\s+u)\b/i.test(
@@ -1201,9 +1847,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // THANKS
-      // --------------------
+      // ====================
 
       if (
         /\b(thanks|thank\s+you|thx|ty|tysm|thank\s+u)\b/i.test(
@@ -1221,9 +1867,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // JOKE
-      // --------------------
+      // ====================
 
       if (
         /\b(tell\s+me\s+a\s+joke|tell\s+a\s+joke|joke)\b/i.test(
@@ -1241,9 +1887,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // WHO ARE YOU
-      // --------------------
+      // ====================
 
       if (
         /\b(who\s+are\s+you|what\s+are\s+you|what\s+is\s+your\s+name|whats\s+your\s+name)\b/i.test(
@@ -1261,9 +1907,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // ARE YOU AI
-      // --------------------
+      // ====================
 
       if (
         /\b(are\s+you\s+a\s+bot|are\s+you\s+ai|are\s+you\s+an\s+ai|you\s+a\s+bot|ur\s+a\s+bot)\b/i.test(
@@ -1281,9 +1927,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // ARE YOU ONLINE
-      // --------------------
+      // ====================
 
       if (
         /\b(are\s+you\s+online|you\s+online|r\s+you\s+online|u\s+online)\b/i.test(
@@ -1301,9 +1947,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // HELP
-      // --------------------
+      // ====================
 
       if (
         /\b(help|help\s+me|what\s+can\s+you\s+do|what\s+do\s+you\s+do)\b/i.test(
@@ -1321,9 +1967,9 @@ client.on(
         return;
       }
 
-      // --------------------
+      // ====================
       // GREETINGS
-      // --------------------
+      // ====================
 
       if (
         /\b(hi|hii|hiii|hello|hey|heyy|heyyy|yo|yoo|yooo|wsp|sup|wassup|whats\s+up|what'?s\s+up)\b/i.test(
@@ -1340,586 +1986,10 @@ client.on(
 
         return;
       }
-
-        // ====================
-    // MEMBER / ADMIN COMMAND LIMIT
-    // ====================
-
-    if (
-      commandName !== "afk" &&
-      hasAllowedBasicRole(
-        member
-      )
-    ) {
-      await interaction.reply({
-        content:
-          "❌ You can only use `/afk`.",
-        ephemeral: true
-      });
-
-      return;
     }
+  }
+);
 
-    // ====================
-    // /AFK
-    // ====================
-
-    if (
-      commandName === "afk"
-    ) {
-      const reason =
-        interaction.options.getString(
-          "reason",
-          true
-        );
-
-      const oldAfk =
-        afkUsers.get(
-          interaction.user.id
-        );
-
-      if (
-        oldAfk &&
-        oldAfk.timer
-      ) {
-        clearTimeout(
-          oldAfk.timer
-        );
-      }
-
-      const name =
-        displayName(member);
-
-      const timer =
-        setTimeout(
-          () => {
-            afkUsers.delete(
-              interaction.user.id
-            );
-          },
-          7 *
-            24 *
-            60 *
-            60 *
-            1000
-        );
-
-      afkUsers.set(
-        interaction.user.id,
-        {
-          reason:
-            reason,
-          user:
-            interaction.user,
-          timer:
-            timer
-        }
-      );
-
-      // Only the person using /afk sees this.
-      await interaction.reply({
-        content:
-          "You are now AFK: " +
-          reason,
-        ephemeral: true
-      });
-
-      // Everyone sees this.
-      await interaction.channel.send({
-        content:
-          name +
-          " is now AFK.",
-        allowedMentions: {
-          users: [],
-          roles: []
-        }
-      });
-
-      return;
-    }
-
-    // ====================
-    // /UNMUTE
-    // ====================
-
-    if (
-      commandName ===
-      "unmute"
-    ) {
-      const user =
-        interaction.options.getUser(
-          "user",
-          true
-        );
-
-      try {
-        const target =
-          await interaction.guild.members.fetch(
-            user.id
-          );
-
-        await target.timeout(
-          null,
-          "Manual unmute"
-        );
-
-        const name =
-          displayName(target);
-
-        await interaction.reply(
-          "🔊 " +
-          name +
-          " has been unmuted."
-        );
-
-        await user
-          .send(
-            "🔊 You were unmuted in " +
-            SERVER_NAME +
-            "."
-          )
-          .catch(
-            () => {}
-          );
-      } catch (error) {
-        console.error(
-          "Unmute error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "❌ I couldn't unmute that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-    // ====================
-    // /WARN
-    // ====================
-
-    if (
-      commandName ===
-      "warn"
-    ) {
-      const user =
-        interaction.options.getUser(
-          "user",
-          true
-        );
-
-      const reason =
-        interaction.options.getString(
-          "reason",
-          true
-        );
-
-      const userWarnings =
-        warnings.get(
-          user.id
-        ) || [];
-
-      userWarnings.push({
-        reason:
-          reason,
-        moderator:
-          interaction.user.id,
-        date:
-          new Date()
-      });
-
-      warnings.set(
-        user.id,
-        userWarnings
-      );
-
-      await interaction.reply(
-        "⚠️ " +
-        user.username +
-        " has been warned.\n" +
-        "Reason: " +
-        reason +
-        "\n" +
-        "Total warnings: " +
-        userWarnings.length
-      );
-
-      await user
-        .send(
-          "⚠️ You received a warning in " +
-          SERVER_NAME +
-          ".\n\n" +
-          "Reason: " +
-          reason +
-          "\n" +
-          "Total warnings: " +
-          userWarnings.length
-        )
-        .catch(
-          () => {}
-        );
-
-      return;
-    }
-
-    // ====================
-    // /WARNINGS
-    // ====================
-
-    if (
-      commandName ===
-      "warnings"
-    ) {
-      const user =
-        interaction.options.getUser(
-          "user",
-          true
-        );
-
-      const userWarnings =
-        warnings.get(
-          user.id
-        ) || [];
-
-      if (
-        userWarnings.length ===
-        0
-      ) {
-        await interaction.reply(
-          user.username +
-          " has no warnings."
-        );
-
-        return;
-      }
-
-      let text =
-        "📋 Warnings for " +
-        user.username +
-        "\n\n";
-
-      userWarnings.forEach(
-        (
-          warning,
-          index
-        ) => {
-          text +=
-            "**" +
-            (index + 1) +
-            ".** " +
-            warning.reason +
-            "\n";
-        }
-      );
-
-      await interaction.reply(
-        text
-      );
-
-      return;
-    }
-
-    // ====================
-    // /MUTE
-    // ====================
-
-    if (
-      commandName ===
-      "mute"
-    ) {
-      const user =
-        interaction.options.getUser(
-          "user",
-          true
-        );
-
-      const durationText =
-        interaction.options.getString(
-          "duration",
-          true
-        );
-
-      const reason =
-        interaction.options.getString(
-          "reason"
-        ) ||
-        "No reason provided";
-
-      const milliseconds =
-        parseDuration(
-          durationText
-        );
-
-      if (!milliseconds) {
-        await interaction.reply({
-          content:
-            "❌ Invalid duration. Use 30s, 5m, 1h, or 1d.",
-          ephemeral: true
-        });
-
-        return;
-      }
-
-      if (
-        milliseconds >
-        28 *
-          24 *
-          60 *
-          60 *
-          1000
-      ) {
-        await interaction.reply({
-          content:
-            "❌ Maximum mute duration is 28 days.",
-          ephemeral: true
-        });
-
-        return;
-      }
-
-      try {
-        const target =
-          await interaction.guild.members.fetch(
-            user.id
-          );
-
-        await target.timeout(
-          milliseconds,
-          "Muted by " +
-            interaction.user
-              .tag +
-            ": " +
-            reason
-        );
-
-        const name =
-          displayName(target);
-
-        await interaction.reply(
-          "🔇 " +
-          name +
-          " has been muted for " +
-          durationText +
-          ".\n" +
-          "Reason: " +
-          reason
-        );
-
-        await sendMuteDM(
-          user,
-          durationText,
-          reason
-        );
-
-        setTimeout(
-          () => {
-            sendMuteOverDM(
-              user
-            );
-          },
-          milliseconds
-        );
-      } catch (error) {
-        console.error(
-          "Mute error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "❌ I couldn't mute that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-    // ====================
-    // /BAN
-    // ====================
-
-    if (
-      commandName ===
-      "ban"
-    ) {
-      const user =
-        interaction.options.getUser(
-          "user",
-          true
-        );
-
-      const reason =
-        interaction.options.getString(
-          "reason"
-        ) ||
-        "No reason provided";
-
-      await user
-        .send(
-          "🔨 You were banned from " +
-          SERVER_NAME +
-          ".\n\n" +
-          "Reason: " +
-          reason +
-          "\n\n" +
-          "Server: " +
-          INVITE_LINK
-        )
-        .catch(
-          () => {}
-        );
-
-      try {
-        await interaction.guild.members.ban(
-          user.id,
-          {
-            reason:
-              reason
-          }
-        );
-
-        await interaction.reply(
-          "🔨 " +
-          user.username +
-          " has been banned.\n" +
-          "Reason: " +
-          reason
-        );
-      } catch (error) {
-        console.error(
-          "Ban error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "❌ I couldn't ban that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-    // ====================
-    // /UNBAN
-    // ====================
-
-    if (
-      commandName ===
-      "unban"
-    ) {
-      const userId =
-        interaction.options.getString(
-          "userid",
-          true
-        );
-
-      try {
-        await interaction.guild.members.unban(
-          userId,
-          "Unbanned by " +
-            interaction.user
-              .tag
-        );
-
-        await interaction.reply(
-          "🔓 User " +
-          userId +
-          " has been unbanned."
-        );
-      } catch (error) {
-        console.error(
-          "Unban error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "❌ I couldn't unban that user.",
-          ephemeral: true
-        });
-      }
-
-      return;
-    }
-
-        // ====================
-    // /KICK
-    // ====================
-
-    if (
-      commandName ===
-      "kick"
-    ) {
-      const user =
-        interaction.options.getUser(
-          "user",
-          true
-        );
-
-      const reason =
-        interaction.options.getString(
-          "reason"
-        ) ||
-        "No reason provided";
-
-      await user
-        .send(
-          "👢 You were kicked from " +
-          SERVER_NAME +
-          ".\n\n" +
-          "Reason: " +
-          reason +
-          "\n\n" +
-          "Server: " +
-          INVITE_LINK
-        )
-        .catch(
-          () => {}
-        );
-
-      try {
-        const target =
-          await interaction.guild.members.fetch(
-            user.id
-          );
-
-        const name =
-          displayName(target);
-
-        await target.kick(
-          reason
-        );
-
-        await interaction.reply(
-          "👢 " +
-          name +
-          " has been kicked.\n" +
-          "Reason: " +
-          reason
-        );
-      } catch (error) {
-        console.error(
-          "Kick error:",
-          error
-        );
-
-        await interaction.reply({
-          content:
-            "❌ I couldn't kick that user.",
-          ephemeral: true
-        });
-      }
-
-return;
-}
-}
- 
 // ====================
 // DISCORD ERROR
 // ====================
