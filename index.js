@@ -255,12 +255,16 @@ function isRepeatedPatternSpam(text) {
 }
 
 // ====================
-// BOT RESPONSES
+// RANDOM HELPER
 // ====================
 
 function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+// ====================
+// BOT RESPONSES
+// ====================
 
 function getBotGreeting() {
   return getRandom([
@@ -282,11 +286,14 @@ function getHowAreYouResponse() {
 }
 
 function getHelpResponse() {
-  return getRandom([
-    "How can I help you?", "Need something? I'm here.", "What's up? What do you need?",
-    "Yeah? Tell me what you need.", "I'm listening. What's up?",
-    "What can I do for you?", "Need some help?", "What's the move?"
-  ]);
+  return (
+    "I can help with a lot! Here's what I do:\n" +
+    "🧮 **Math** — just ask me any calculation\n" +
+    "💬 **Chat** — talk to me, ask questions, whatever's on your mind\n" +
+    "🛡️ **Moderation** — admins can use `/mute`, `/ban`, `/kick`, `/warn` and more\n" +
+    "💤 **AFK** — set yourself AFK with `/afk`\n\n" +
+    "Just mention me or say 'Thundra Bot' and I'll do my best to help!"
+  );
 }
 
 function getLoveResponse() {
@@ -315,6 +322,116 @@ function getJokeResponse() {
     "Why did the creeper cross the road? To get closer to the player.",
     "My code never crashes. It just takes unexpected vacations.",
     "Why don't bots ever get tired? We have no sleep schedule."
+  ]);
+}
+
+function getComplimentResponse() {
+  return getRandom([
+    "Aww thank you, that genuinely made my day!",
+    "You're too kind, I appreciate that a lot!",
+    "That's really sweet, thank you!",
+    "Aww stop it 😊 you're great too!",
+    "That means a lot, seriously. Thank you!"
+  ]);
+}
+
+function getInsultResponse() {
+  return getRandom([
+    "Aw that's a bit mean but I still like you lol.",
+    "Ouch! I'll let that slide, no hard feelings.",
+    "That hurt a little but I forgive you 😅",
+    "Hey, I'm doing my best over here! Still love u tho."
+  ]);
+}
+
+function getBoredomResponse() {
+  return getRandom([
+    "Bored? Same honestly. Wanna talk about something? I'm all ears.",
+    "Boredom hits different. Chat with me, what's on your mind?",
+    "I'm literally always here if you're bored lol. What's up?",
+    "Tell me something interesting then! Or ask me anything, I'll try my best."
+  ]);
+}
+
+function getOpinionResponse() {
+  return getRandom([
+    "Honestly? I think whatever feels right to you is probably the move. I'm just a bot so my opinion is limited lol, but I'm rooting for you!",
+    "I mean, I'd say go with your gut on that one. You know the situation better than I do!",
+    "That's a tough call. I don't wanna steer you wrong but I think both options have merit — what's your gut say?",
+    "Lowkey I think you already know the answer, you just need someone to back you up lol. You got this."
+  ]);
+}
+
+function getShouldIResponse() {
+  return getRandom([
+    "That's really up to you, but if it feels right and it's not hurting anyone — go for it!",
+    "Honestly? If your gut says yes, probably yes. I believe in you.",
+    "I can't make that call for you but I think you've got good judgment. Trust yourself!",
+    "Hmm, hard to say without knowing everything about the situation. What's making you second guess it?"
+  ]);
+}
+
+function getAdviceResponse() {
+  return getRandom([
+    "I'm here for you! Tell me more about what's going on and I'll do my best to help.",
+    "Of course, what's up? I'll try my best to help out.",
+    "Yeah let's figure this out together. What's the situation?",
+    "I got you. What's going on?"
+  ]);
+}
+
+function getAgreementResponse() {
+  return getRandom([
+    "Right?? Exactly.", "Facts, couldn't agree more.", "Yeah no you're totally right.",
+    "100% agree.", "Exactly my thoughts lol."
+  ]);
+}
+
+function getWhatIsResponse(subject) {
+  return getRandom([
+    `Hmm, ${subject}? I'm not a full encyclopedia but from what I know, it's worth looking it up on Google for a solid answer! I'm still learning too.`,
+    `Good question! I don't have a full database, but I'd check Wikipedia or Google for "${subject}" — you'll get a way better answer than me lol.`,
+    `I kinda know about ${subject} but I don't wanna give you wrong info. Google it real quick, should pop right up!`,
+    `Oh that's a good one. For "${subject}" specifically I'd point you to Google or Wikipedia — they'll explain it way better than I can.`
+  ]);
+}
+
+function getHowToResponse(subject) {
+  return getRandom([
+    `For "${subject}" — I'd honestly Google that step by step, YouTube tutorials are great for that kind of thing too!`,
+    `Hmm, how to ${subject}... I think the best move is a quick Google or YouTube search. You'll find a full guide way faster than I can explain it.`,
+    `That's a bit outside what I can walk you through fully, but searching "${subject} tutorial" on Google or YouTube should get you sorted!`,
+    `Good question! For something like that I'd look it up on Google, there's usually a super easy guide out there.`
+  ]);
+}
+
+function getWhyResponse() {
+  return getRandom([
+    "Ooh, a why question. Honestly I'm not sure of the full answer but I'd love to help figure it out — got more context?",
+    "That's a deep one lol. I don't have a perfect answer but if you give me more details I can try my best!",
+    "Why questions are tough! I'm not always sure but I'll try — can you tell me a bit more about what you mean?",
+    "Hmm, not 100% sure on that one. Could you explain a bit more so I can try to help properly?"
+  ]);
+}
+
+function getSmartFallback(content) {
+  if (/\?/.test(content)) {
+    return getRandom([
+      "Hmm, that's a good question. I'm not 100% sure but I'll try my best — could you give me a bit more context?",
+      "Ooh I'm not totally sure about that one. For a proper answer I'd Google it, but I'm happy to chat about it!",
+      "That's a tough one for me to answer fully, but I'm here if you wanna talk it through!",
+      "I wish I had a perfect answer for you! I'm not sure on that one — try Googling it for the best info.",
+      "Hmm, not my area of expertise lol. But I'm listening if you wanna explain more!"
+    ]);
+  }
+
+  return getRandom([
+    "I hear you! What's on your mind?",
+    "Say more, I'm listening!",
+    "Interesting! Tell me more.",
+    "I'm here! What's going on?",
+    "Noted! Anything I can help with?",
+    "I got you. What do you need?"
   ]);
 }
 
@@ -661,31 +778,152 @@ client.on("messageCreate", async message => {
 
   if (!botMentioned && !hasThundraBot) return;
 
+  // Typing indicator — makes it feel like the bot is thinking
+  await message.channel.sendTyping();
+
+  const reply = async (text) =>
+    message.reply({ content: text, allowedMentions: { repliedUser: false } });
+
+  const c = cleaned;
+
   // MATH
   const mathResult = solveMath(content);
-  if (mathResult !== null) {
-    await message.reply({ content: `🧮 The answer is **${mathResult}**`, allowedMentions: { repliedUser: false } });
-    return;
-  }
+  if (mathResult !== null) return reply(`🧮 The answer is **${mathResult}**`);
 
   // IQ
-  if (isIQQuestion(content)) {
-    await message.reply({ content: "https://klipy.com/gifs/iq-smart", allowedMentions: { repliedUser: false } });
-    return;
+  if (isIQQuestion(content)) return reply("https://klipy.com/gifs/iq-smart");
+
+  // HOW ARE YOU
+  if (/\bhow\s+(are|r)\s+(you|u)\b/i.test(c)) return reply(getHowAreYouResponse());
+
+  // LOVE
+  if (/\b(i\s+love\s+you|love\s+you|luv\s+you|luv\s+u)\b/i.test(c)) return reply(getLoveResponse());
+
+  // THANKS
+  if (/\b(thanks|thank\s+you|thx|ty|tysm|thank\s+u)\b/i.test(c)) return reply(getThanksResponse());
+
+  // COMPLIMENTS
+  if (/\b(you('?re| are) (amazing|awesome|great|cool|the best|so smart|smart|helpful|nice|sweet)|good bot|best bot|nice bot)\b/i.test(c))
+    return reply(getComplimentResponse());
+
+  // INSULTS
+  if (/\b(you (suck|are (dumb|stupid|useless|trash|bad))|shut up|dumb bot|stupid bot|bad bot|hate you)\b/i.test(c))
+    return reply(getInsultResponse());
+
+  // BORED
+  if (/\b(i('?m| am) bored|so bored|bored as|nothing to do)\b/i.test(c))
+    return reply(getBoredomResponse());
+
+  // JOKE
+  if (/\b(tell\s+(me\s+)?(a\s+)?joke|joke)\b/i.test(c)) return reply(getJokeResponse());
+
+  // WHO ARE YOU
+  if (/\b(who\s+are\s+you|what\s+are\s+you|what\s+is\s+your\s+name|whats\s+your\s+name|your\s+name)\b/i.test(c))
+    return reply(getBotQuestionResponse());
+
+  // ARE YOU A BOT / AI
+  if (/\b(are\s+you\s+(a\s+)?(bot|ai|robot)|you\s+a\s+bot|ur\s+a\s+bot|are\s+you\s+an\s+ai)\b/i.test(c))
+    return reply("Yeah bro, I'm literally Thundra Bot. A bot, but I try my best to be helpful!");
+
+  // ARE YOU ONLINE / ALIVE
+  if (/\b(are\s+you\s+online|you\s+online|r\s+you\s+online|u\s+online|you\s+there|anyone\s+there|you\s+alive|are\s+you\s+alive|you\s+working|are\s+you\s+working)\b/i.test(c))
+    return reply("Yep, alive and online! What do you need?");
+
+  // HELP
+  if (/\b(help(\s+me)?|what\s+can\s+you\s+do|what\s+do\s+you\s+do|your\s+commands)\b/i.test(c))
+    return reply(getHelpResponse());
+
+  // GOOD MORNING / AFTERNOON / NIGHT
+  if (/\b(good\s+morning|good\s+afternoon|good\s+night|gm|gn|goodnight)\b/i.test(c))
+    return reply(getRandom([
+      "Good morning! Hope your day goes well 🌅",
+      "Morning! Have a great one ☀️",
+      "Good night! Get some rest 🌙",
+      "Gn! Sleep well 💤",
+      "Good afternoon! Hope the day's been good so far!"
+    ]));
+
+  // GREETINGS
+  if (/\b(hi+|hello|hey+|yo+|wsp|sup|wassup|whats\s+up|what'?s\s+up)\b/i.test(c))
+    return reply(getBotGreeting());
+
+  // SHOULD I
+  if (/\bshould\s+(i|we)\b/i.test(c)) return reply(getShouldIResponse());
+
+  // WHAT DO YOU THINK / OPINION
+  if (/\b(what\s+do\s+you\s+think|what'?s\s+your\s+(opinion|take|thoughts?)|do\s+you\s+think)\b/i.test(c))
+    return reply(getOpinionResponse());
+
+  // ADVICE / NEED HELP
+  if (/\b(can\s+you\s+(help|give\s+(me\s+)?advice)|need\s+(help|advice)|got\s+a\s+problem|i\s+need\s+help)\b/i.test(c))
+    return reply(getAdviceResponse());
+
+  // WHAT TIME / DAY / DATE
+  if (/\bwhat\s+(time|day|date)(\s+(is\s+it|is\s+today))?\b/i.test(c))
+    return reply(getRandom([
+      "I don't have access to the clock unfortunately, but your device will tell you!",
+      "Not sure what time it is on your end — check your phone or PC!",
+      "I wish I knew lol, check your device for the time!"
+    ]));
+
+  // FAVORITE
+  if (/\b(what'?s?\s+your\s+fav(ou?rite)?|do\s+you\s+(like|have\s+a\s+fav))\b/i.test(c))
+    return reply(getRandom([
+      "As a bot I don't really have favorites but if I did, I'd probably pick whatever keeps this server running smoothly lol.",
+      "I like helping people out, if that counts as a favorite thing!",
+      "Honestly? I just enjoy being here and chatting with everyone. That's enough for me.",
+      "My favorite is when everyone in the server is chill and having a good time lol."
+    ]));
+
+  // AGREEMENT
+  if (/\b(i\s+agree|same|facts|fr|for\s+real|no\s+cap|exactly|true|real\s+talk|lowkey)\b/i.test(c))
+    return reply(getAgreementResponse());
+
+  // CAN YOU (general)
+  if (/\bcan\s+(you|u)\b/i.test(c))
+    return reply(getRandom([
+      "I'll do my best! What do you need?",
+      "I can try! What's up?",
+      "Maybe! Tell me more and I'll see what I can do.",
+      "Depends lol — what do you need?"
+    ]));
+
+  // HOW TO / HOW DO I
+  if (/\bhow\s+(do\s+(i|u|we)|to|can\s+(i|u|we))\b/i.test(c)) {
+    const subject = c.replace(/\bhow\s+(do\s+(i|u|we)|to|can\s+(i|u|we))\s*/i, "").trim();
+    return reply(getHowToResponse(subject || "that"));
   }
 
-  // CONVERSATION RESPONSES
-  const reply = async (content) => message.reply({ content, allowedMentions: { repliedUser: false } });
+  // WHO IS
+  if (/\bwho\s+(is|was|are|were)\b/i.test(c)) {
+    const subject = c.replace(/\bwho\s+(is|was|are|were)\s*/i, "").replace(/[?]/g, "").trim();
+    return reply(getRandom([
+      `Hmm, I'm not sure about "${subject}" specifically — try Googling them for the full story!`,
+      `I don't have a great answer on "${subject}" but Google will!`,
+      `"${subject}"? I think you'd get a better answer on Google for that one tbh.`
+    ]));
+  }
 
-  if (/\bhow\s+(are|r)\s+(you|u)\b/i.test(cleaned)) return reply(getHowAreYouResponse());
-  if (/\b(i\s+love\s+you|love\s+you|luv\s+you|luv\s+u)\b/i.test(cleaned)) return reply(getLoveResponse());
-  if (/\b(thanks|thank\s+you|thx|ty|tysm|thank\s+u)\b/i.test(cleaned)) return reply(getThanksResponse());
-  if (/\b(tell\s+me\s+a\s+joke|tell\s+a\s+joke|joke)\b/i.test(cleaned)) return reply(getJokeResponse());
-  if (/\b(who\s+are\s+you|what\s+are\s+you|what\s+is\s+your\s+name|whats\s+your\s+name)\b/i.test(cleaned)) return reply(getBotQuestionResponse());
-  if (/\b(are\s+you\s+a\s+bot|are\s+you\s+ai|are\s+you\s+an\s+ai|you\s+a\s+bot|ur\s+a\s+bot)\b/i.test(cleaned)) return reply("Yeah bro, I'm literally Thundra Bot.");
-  if (/\b(are\s+you\s+online|you\s+online|r\s+you\s+online|u\s+online)\b/i.test(cleaned)) return reply("Yep, I'm online and chilling.");
-  if (/\b(help|help\s+me|what\s+can\s+you\s+do|what\s+do\s+you\s+do)\b/i.test(cleaned)) return reply(getHelpResponse());
-  if (/\b(hi|hii|hiii|hello|hey|heyy|heyyy|yo|yoo|yooo|wsp|sup|wassup|whats\s+up|what'?s\s+up)\b/i.test(cleaned)) return reply(getBotGreeting());
+  // WHAT IS / WHAT ARE
+  if (/\bwhat\s+(is|are|was|were)\b/i.test(c)) {
+    const subject = c.replace(/\bwhat\s+(is|are|was|were)\s*/i, "").replace(/[?]/g, "").trim();
+    return reply(getWhatIsResponse(subject || "that"));
+  }
+
+  // WHY
+  if (/^\s*why\b/i.test(c) || /\bwhy\s+(is|are|do|does|did|would|can|can't|won't)\b/i.test(c))
+    return reply(getWhyResponse());
+
+  // WHEN
+  if (/\bwhen\s+(is|are|was|were|did|will|does)\b/i.test(c))
+    return reply(getRandom([
+      "That I'm not sure about — dates and times aren't really my thing lol. Google should have it though!",
+      "Hmm, not sure on that one. Quick Google search should tell you exactly!",
+      "I wish I knew! Google or Discord announcements would be your best bet for that."
+    ]));
+
+  // SMART FALLBACK — never goes silent
+  return reply(getSmartFallback(content));
 });
 
 // ====================
