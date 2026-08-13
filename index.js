@@ -733,17 +733,25 @@ client.once("ready", async () => {
 new SlashCommandBuilder()
   .setName("log")
   .setDescription("Find logs from a specific date and time")
+  .addIntegerOption(o =>
+    o.setName("day")
+      .setDescription("Day of the month")
+      .setMinValue(1)
+      .setMaxValue(31)
+      .setRequired(true)
+  )
   .addStringOption(o =>
-    o.setName("date")
-      .setDescription("Example: June 8")
+    o.setName("month")
+      .setDescription("Start typing a month")
+      .setAutocomplete(true)
       .setRequired(true)
   )
   .addStringOption(o =>
     o.setName("time")
       .setDescription("24-hour time, example: 13:01")
       .setRequired(true)
-  )
-
+  ),
+    
 ].map(c => c.toJSON());
 
 try {
@@ -1143,6 +1151,31 @@ client.on("messageCreate", async message => {
   const content = message.content || "";
   const cleaned = cleanText(content);
 
+  // ====================
+  // AUTOMATIC 5-MINUTE MUTE
+  // ====================
+
+  const racistWordPattern = /\b(?:n+ig+g+a|n+ig+g+e+r|n+g+a)\b/i;
+
+  if (racistWordPattern.test(content)) {
+    try {
+      if (member?.moderatable) {
+        await member.timeout(
+          5 * 60 * 1000,
+          "Automatic 5-minute mute for racist language"
+        );
+
+        await logToConsole(
+          "MODERATION",
+          `🛡️ **${displayName(member)}** was automatically muted for 5 minutes for racist language.`
+        );
+      }
+    } catch (error) {
+      console.error("Automatic mute error:", error);
+    }
+
+    return;
+  }
   // ====================
   // MESSAGE LOGGING
   // ====================
