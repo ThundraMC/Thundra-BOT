@@ -63,7 +63,6 @@ async function logToConsole(type, message) {
 
   botLogs.push(logEntry);
 
-  // Keep the latest 5000 logs
   if (botLogs.length > 5000) {
     botLogs.shift();
   }
@@ -73,11 +72,21 @@ async function logToConsole(type, message) {
 
     if (!channel || !channel.isTextBased()) return;
 
-    const timestamp = `<t:${Math.floor(now.getTime() / 1000)}:F>`;
+    const time = now.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    let icon = "📋";
+
+    if (type === "MESSAGE") icon = "💬";
+    if (type === "COMMAND") icon = "⚡";
+    if (type === "MODERATION") icon = "🛡️";
 
     await channel.send(
-      `**[${type}]** ${timestamp}\n${message}`
+      `${icon} **[${time}]** ${message}`
     );
+
   } catch (error) {
     console.error("Console logging error:", error);
   }
