@@ -1188,8 +1188,9 @@ client.on("messageCreate", async message => {
 }
   // Only respond to direct pings, never replies
   const botMentioned =
-    client.user &&
-    message.mentions.users.has(client.user.id) &&
+  client.user &&
+  message.mentions.users.has(client.user.id) &&
+  !message.reference;
     !message.reference;
 
   // AFK RETURN
