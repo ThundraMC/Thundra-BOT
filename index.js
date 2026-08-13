@@ -725,20 +725,34 @@ client.once("ready", async () => {
       .setName("unban").setDescription("Unban a user")
       .addStringOption(o => o.setName("userid").setDescription("Discord user ID").setRequired(true)),
 
-    new SlashCommandBuilder()
-      .setName("kick").setDescription("Kick a member")
-      .addUserOption(o => o.setName("user").setDescription("User to kick").setRequired(true))
-      .addStringOption(o => o.setName("reason").setDescription("Reason for kick").setRequired(false))
+   new SlashCommandBuilder()
+  .setName("kick").setDescription("Kick a member")
+  .addUserOption(o => o.setName("user").setDescription("User to kick").setRequired(true))
+  .addStringOption(o => o.setName("reason").setDescription("Reason for kick").setRequired(false)),
 
-  ].map(c => c.toJSON());
+new SlashCommandBuilder()
+  .setName("log")
+  .setDescription("Find logs from a specific date and time")
+  .addStringOption(o =>
+    o.setName("date")
+      .setDescription("Example: June 8")
+      .setRequired(true)
+  )
+  .addStringOption(o =>
+    o.setName("time")
+      .setDescription("24-hour time, example: 13:01")
+      .setRequired(true)
+  )
 
-  try {
-    const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
-    await rest.put(Routes.applicationGuildCommands(client.user.id, SERVER_ID), { body: commands });
-    console.log("Slash commands registered.");
-  } catch (error) {
-    console.error("Failed to register slash commands:", error);
-  }
+].map(c => c.toJSON());
+
+try {
+  const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+  await rest.put(Routes.applicationGuildCommands(client.user.id, SERVER_ID), { body: commands });
+  console.log("Slash commands registered.");
+} catch (error) {
+  console.error("Failed to register slash commands:", error);
+}
 });
 
 // ====================
