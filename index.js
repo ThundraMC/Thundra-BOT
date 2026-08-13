@@ -1094,12 +1094,11 @@ client.on("messageCreate", async message => {
   // ====================
 
   if (message.channel.id !== CONSOLE_CHANNEL_ID) {
-    logToConsole(
-      "MESSAGE",
-      `👤 **${displayName(member)}** (${message.author.id}) in <#${message.channel.id}>:\n> ${content.slice(0, 1000)}`
-    );
-  }
-  
+  logToConsole(
+    "MESSAGE",
+    `**${displayName(member)}** • <#${message.channel.id}> • ${content.slice(0, 1000)}`
+  );
+}
   // Only respond to direct pings, never replies
   const botMentioned =
     client.user &&
