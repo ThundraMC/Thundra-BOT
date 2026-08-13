@@ -37,13 +37,51 @@ const client = new Client({
 
 const SERVER_ID = "1531632541377757224";
 const SERVER_NAME = "Thundra SMP";
+const CONSOLE_CHANNEL_ID = "1537574569291030661";
 const INVITE_LINK = "https://discord.gg/aebQ8RNSgW";
 
 const MEMBER_ROLE_NAME = "👤・Member";
 const ADMIN_ROLE_NAME = "🛡️・Admin";
 
 // Change this to your welcome channel name or ID
-const WELCOME_CHANNEL_NAME = "general";
+const WELCOME_CHANNEL_NAME = "1533902298806358167";
+
+// ====================
+// CONSOLE LOGGING
+// ====================
+
+const botLogs = [];
+
+async function logToConsole(type, message) {
+  const now = new Date();
+
+  const logEntry = {
+    timestamp: now,
+    type,
+    message
+  };
+
+  botLogs.push(logEntry);
+
+  // Keep the latest 5000 logs
+  if (botLogs.length > 5000) {
+    botLogs.shift();
+  }
+
+  try {
+    const channel = await client.channels.fetch(CONSOLE_CHANNEL_ID);
+
+    if (!channel || !channel.isTextBased()) return;
+
+    const timestamp = `<t:${Math.floor(now.getTime() / 1000)}:F>`;
+
+    await channel.send(
+      `**[${type}]** ${timestamp}\n${message}`
+    );
+  } catch (error) {
+    console.error("Console logging error:", error);
+  }
+}
 
 // ====================
 // DATA
@@ -722,6 +760,22 @@ client.on("guildMemberAdd", async member => {
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
+  // ====================
+  // COMMAND LOGGING
+  // ====================
+
+  const options = interaction.options.data
+    .map(option => {
+      if (option.user) return `${option.name}: ${option.user.tag}`;
+      return `${option.name}: ${option.value ?? ""}`;
+    })
+    .join(", ");
+
+  logToConsole(
+    "COMMAND",
+    `👤 **${interaction.user.tag}** used \`/${interaction.commandName}\`${options ? ` — ${options}` : ""}`
+  );
+
   const commandName = interaction.commandName;
 const member = interaction.member;
 
@@ -1026,6 +1080,17 @@ client.on("messageCreate", async message => {
   const content = message.content || "";
   const cleaned = cleanText(content);
 
+  // ====================
+  // MESSAGE LOGGING
+  // ====================
+
+  if (message.channel.id !== CONSOLE_CHANNEL_ID) {
+    logToConsole(
+      "MESSAGE",
+      `👤 **${displayName(member)}** (${message.author.id}) in <#${message.channel.id}>:\n> ${content.slice(0, 1000)}`
+    );
+  }
+  
   // Only respond to direct pings, never replies
   const botMentioned =
     client.user &&
