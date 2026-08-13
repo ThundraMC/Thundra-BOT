@@ -981,7 +981,7 @@ client.on("messageCreate", async message => {
   const content = message.content || "";
   const cleaned = cleanText(content);
   const botMentioned = client.user && message.mentions.users.has(client.user.id);
-  const hasThundraBot = /\bthundra\s*bot\b/i.test(content);
+
 
   // AFK RETURN
   if (afkUsers.has(message.author.id)) {
@@ -1094,7 +1094,7 @@ setTimeout(() => {
     }
   }
 
-  if (!botMentioned && !hasThundraBot) return;
+  if (!botMentioned) return;
 
   // COOLDOWN CHECK
   if (isOnCooldown(message.author.id)) return;
