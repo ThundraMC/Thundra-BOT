@@ -656,7 +656,7 @@ client.once("ready", async () => {
       .addStringOption(o => o.setName("reason").setDescription("Reason for warning").setRequired(true)),
 
     new SlashCommandBuilder()
-      .setName("warnings").setDescription("View a member's warnings")
+      .setName("checkwarnings").setDescription("View a member's warnings")
       .addUserOption(o => o.setName("user").setDescription("User to check").setRequired(true)),
 
     new SlashCommandBuilder()
@@ -910,7 +910,7 @@ if (publicCommands.includes(commandName)) {
   }
 
   // /WARNINGS
-  if (commandName === "warnings") {
+  if (commandName === "checkwarnings") {
     const user = interaction.options.getUser("user", true);
     const userWarnings = warnings.get(user.id) || [];
 
@@ -921,7 +921,10 @@ if (publicCommands.includes(commandName)) {
 
     let text = `📋 Warnings for ${user.username}\n\n`;
     userWarnings.forEach((w, i) => { text += `**${i + 1}.** ${w.reason}\n`; });
-    await interaction.reply(text);
+    await interaction.reply({
+  content: text,
+  ephemeral: true
+});
     return;
   }
 
