@@ -910,7 +910,7 @@ if (publicCommands.includes(commandName)) {
   }
 
   // /WARNINGS
-  if (commandName === "checkwarnings") {
+  if (commandName === "warnings") {
     const user = interaction.options.getUser("user", true);
     const userWarnings = warnings.get(user.id) || [];
 
