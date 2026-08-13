@@ -723,30 +723,72 @@ client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   const commandName = interaction.commandName;
-  const member = interaction.member;
+const member = interaction.member;
 
-  // Public commands that don't need a role check
-  const publicCommands = ["ping", "serverinfo", "userinfo", "coinflip", "roll"];
+// ====================
+// COMMAND PERMISSIONS
+// ====================
 
-  if (!publicCommands.includes(commandName) && !hasAllowedBasicRole(member)) {
+const publicCommands = [
+  "ping",
+  "afk",
+  "serverinfo",
+  "userinfo",
+  "coinflip",
+  "roll"
+];
+
+const adminCommands = [
+  "unmute",
+  "warnings",
+  "warn"
+];
+
+const ownerCommands = [
+  "ban",
+  "clearwarnings",
+  "unban",
+  "kick",
+  "mute"
+];
+
+const OWNER_ROLE = "👑・Owner";
+const COOWNER_ROLE = "⚜️・Co-Owner";
+const ADMIN_ROLE = "🛡️・Admin";
+
+const hasOwnerRole =
+  member?.roles?.cache?.some(r =>
+    r.name === OWNER_ROLE || r.name === COOWNER_ROLE
+  );
+
+const hasAdminCommandRole =
+  member?.roles?.cache?.some(r =>
+    r.name === OWNER_ROLE ||
+    r.name === COOWNER_ROLE ||
+    r.name === ADMIN_ROLE
+  );
+
+if (publicCommands.includes(commandName)) {
+  // allowed
+} else if (adminCommands.includes(commandName)) {
+  if (!hasAdminCommandRole) {
     await interaction.reply({
-      content: `❌ You need the ${MEMBER_ROLE_NAME} role to use bot commands.`,
+      content: "❌ You need the Admin, Co-Owner, or Owner role to use this command.",
       ephemeral: true
     });
     return;
   }
-
-  const adminCommands = ["unmute", "warn", "warnings", "clearwarnings", "mute", "ban", "unban", "kick"];
-
-  if (adminCommands.includes(commandName) && !hasAdminRole(member)) {
+} else if (ownerCommands.includes(commandName)) {
+  if (!hasOwnerRole) {
     await interaction.reply({
-      content: `❌ You need the ${ADMIN_ROLE_NAME} role to use this command.`,
+      content: "❌ Only the Owner or Co-Owner can use this command.",
       ephemeral: true
     });
     return;
   }
+}
 
-  // /PING
+// /PING
   if (commandName === "ping") {
     const sent = await interaction.reply({ content: "Pinging...", fetchReply: true });
     const latency = sent.createdTimestamp - interaction.createdTimestamp;
