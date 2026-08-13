@@ -1022,15 +1022,26 @@ client.on("messageCreate", async message => {
   const member = message.member;
   const content = message.content || "";
   const cleaned = cleanText(content);
-  const botMentioned = client.user && message.mentions.users.has(client.user.id);
 
+  // Only respond to direct pings, never replies
+  const botMentioned =
+    client.user &&
+    message.mentions.users.has(client.user.id) &&
+    !message.reference;
 
   // AFK RETURN
   if (afkUsers.has(message.author.id)) {
     const afkData = afkUsers.get(message.author.id);
-    if (afkData?.timer) clearTimeout(afkData.timer);
+
+    if (afkData?.timer) {
+      clearTimeout(afkData.timer);
+    }
+
     afkUsers.delete(message.author.id);
-    await message.channel.send(displayName(member) + " is no longer AFK.");
+
+    await message.channel.send(
+      displayName(member) + " is no longer AFK."
+    );
   }
 
   // AFK PING CHECK
