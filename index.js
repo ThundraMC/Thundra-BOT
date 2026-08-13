@@ -1299,3 +1299,7 @@ if (!process.env.TOKEN) {
   console.error("TOKEN is missing from environment variables.");
   process.exit(1);
 }
+
+client.login(process.env.TOKEN)
+  .then(() => console.log("Discord login successful!"))
+  .catch(error => console.error("Discord login failed:", error));
