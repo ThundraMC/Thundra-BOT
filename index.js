@@ -781,6 +781,46 @@ client.on("guildMemberAdd", async member => {
 // ====================
 
 client.on("interactionCreate", async interaction => {
+
+  // ====================
+  // /LOG AUTOCOMPLETE
+  // ====================
+
+  if (interaction.isAutocomplete()) {
+    if (interaction.commandName === "log") {
+
+      const months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ];
+
+      const focused = interaction.options.getFocused().toLowerCase();
+
+      const filtered = months
+        .filter(month => month.toLowerCase().startsWith(focused))
+        .slice(0, 25);
+
+      await interaction.respond(
+        filtered.map(month => ({
+          name: month,
+          value: month
+        }))
+      );
+    }
+
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   // ====================
