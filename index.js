@@ -1,7 +1,23 @@
 require("dotenv").config();
 
 const express = require("express");
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  StringSelectMenuBuilder,
+  PermissionFlagsBits,
+  ChannelType
+} = require("discord.js");
 
 // ====================
 // RENDER WEB SERVER
@@ -678,7 +694,11 @@ client.once("ready", async () => {
     new SlashCommandBuilder()
       .setName("userinfo")
       .setDescription("Show info about a user")
-      .addUserOption(o => o.setName("user").setDescription("User to look up").setRequired(false)),
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to look up")
+          .setRequired(false)
+      ),
 
     new SlashCommandBuilder()
       .setName("coinflip")
@@ -687,80 +707,163 @@ client.once("ready", async () => {
     new SlashCommandBuilder()
       .setName("roll")
       .setDescription("Roll a dice")
-      .addIntegerOption(o => o.setName("sides").setDescription("Number of sides (default 6)").setRequired(false)),
+      .addIntegerOption(o =>
+        o.setName("sides")
+          .setDescription("Number of sides (default 6)")
+          .setRequired(false)
+      ),
 
     new SlashCommandBuilder()
-      .setName("afk").setDescription("Set your AFK status")
-      .addStringOption(o => o.setName("reason").setDescription("Why are you AFK?").setRequired(true)),
+      .setName("afk")
+      .setDescription("Set your AFK status")
+      .addStringOption(o =>
+        o.setName("reason")
+          .setDescription("Why are you AFK?")
+          .setRequired(true)
+      ),
 
     new SlashCommandBuilder()
-      .setName("unmute").setDescription("Unmute a member")
-      .addUserOption(o => o.setName("user").setDescription("User to unmute").setRequired(true)),
+      .setName("unmute")
+      .setDescription("Unmute a member")
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to unmute")
+          .setRequired(true)
+      ),
 
     new SlashCommandBuilder()
-      .setName("warn").setDescription("Warn a member")
-      .addUserOption(o => o.setName("user").setDescription("User to warn").setRequired(true))
-      .addStringOption(o => o.setName("reason").setDescription("Reason for warning").setRequired(true)),
+      .setName("warn")
+      .setDescription("Warn a member")
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to warn")
+          .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName("reason")
+          .setDescription("Reason for warning")
+          .setRequired(true)
+      ),
 
     new SlashCommandBuilder()
-      .setName("checkwarnings").setDescription("View a member's warnings")
-      .addUserOption(o => o.setName("user").setDescription("User to check").setRequired(true)),
+      .setName("checkwarnings")
+      .setDescription("View a member's warnings")
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to check")
+          .setRequired(true)
+      ),
 
     new SlashCommandBuilder()
-      .setName("clearwarnings").setDescription("Clear all warnings for a member")
-      .addUserOption(o => o.setName("user").setDescription("User to clear warnings for").setRequired(true)),
+      .setName("clearwarnings")
+      .setDescription("Clear all warnings for a member")
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to clear warnings for")
+          .setRequired(true)
+      ),
 
     new SlashCommandBuilder()
-      .setName("mute").setDescription("Mute a member")
-      .addUserOption(o => o.setName("user").setDescription("User to mute").setRequired(true))
-      .addStringOption(o => o.setName("duration").setDescription("Example: 30s, 5m, 1h, 1d").setRequired(true))
-      .addStringOption(o => o.setName("reason").setDescription("Reason for mute").setRequired(false)),
+      .setName("mute")
+      .setDescription("Mute a member")
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to mute")
+          .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName("duration")
+          .setDescription("Example: 30s, 5m, 1h, 1d")
+          .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName("reason")
+          .setDescription("Reason for mute")
+          .setRequired(false)
+      ),
 
     new SlashCommandBuilder()
-      .setName("ban").setDescription("Ban a member")
-      .addUserOption(o => o.setName("user").setDescription("User to ban").setRequired(true))
-      .addStringOption(o => o.setName("reason").setDescription("Reason for ban").setRequired(false)),
+      .setName("ban")
+      .setDescription("Ban a member")
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to ban")
+          .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName("reason")
+          .setDescription("Reason for ban")
+          .setRequired(false)
+      ),
 
     new SlashCommandBuilder()
-      .setName("unban").setDescription("Unban a user")
-      .addStringOption(o => o.setName("userid").setDescription("Discord user ID").setRequired(true)),
+      .setName("unban")
+      .setDescription("Unban a user")
+      .addStringOption(o =>
+        o.setName("userid")
+          .setDescription("Discord user ID")
+          .setRequired(true)
+      ),
 
-   new SlashCommandBuilder()
-  .setName("kick").setDescription("Kick a member")
-  .addUserOption(o => o.setName("user").setDescription("User to kick").setRequired(true))
-  .addStringOption(o => o.setName("reason").setDescription("Reason for kick").setRequired(false)),
+    new SlashCommandBuilder()
+      .setName("kick")
+      .setDescription("Kick a member")
+      .addUserOption(o =>
+        o.setName("user")
+          .setDescription("User to kick")
+          .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName("reason")
+          .setDescription("Reason for kick")
+          .setRequired(false)
+      ),
 
-new SlashCommandBuilder()
-  .setName("log")
-  .setDescription("Find logs from a specific date and time")
-  .addIntegerOption(o =>
-    o.setName("day")
-      .setDescription("Day of the month")
-      .setMinValue(1)
-      .setMaxValue(31)
-      .setRequired(true)
-  )
-  .addStringOption(o =>
-    o.setName("month")
-      .setDescription("Start typing a month")
-      .setAutocomplete(true)
-      .setRequired(true)
-  )
-  .addStringOption(o =>
-    o.setName("time")
-      .setDescription("24-hour time, example: 13:01")
-      .setRequired(true)
-  ),
-    
-].map(c => c.toJSON());
+    new SlashCommandBuilder()
+      .setName("log")
+      .setDescription("Find logs from a specific date and time")
+      .addIntegerOption(o =>
+        o.setName("day")
+          .setDescription("Day of the month")
+          .setMinValue(1)
+          .setMaxValue(31)
+          .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName("month")
+          .setDescription("Start typing a month")
+          .setAutocomplete(true)
+          .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName("time")
+          .setDescription("24-hour time, example: 13:01")
+          .setRequired(true)
+      ),
 
-try {
-  const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
-  await rest.put(Routes.applicationGuildCommands(client.user.id, SERVER_ID), { body: commands });
-  console.log("Slash commands registered.");
-} catch (error) {
-  console.error("Failed to register slash commands:", error);
-}
+    new SlashCommandBuilder()
+      .setName("setup")
+      .setDescription("Set up server features")
+      .addSubcommand(sub =>
+        sub
+          .setName("ticket")
+          .setDescription("Set up the ticket system")
+      )
+
+  ].map(c => c.toJSON());
+
+  try {
+    const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+
+    await rest.put(
+      Routes.applicationGuildCommands(client.user.id, SERVER_ID),
+      { body: commands }
+    );
+
+    console.log("Slash commands registered.");
+  } catch (error) {
+    console.error("Failed to register slash commands:", error);
+  }
 });
 
 // ====================
@@ -831,6 +934,423 @@ client.on("interactionCreate", async interaction => {
 
   if (!interaction.isChatInputCommand()) return;
 
+  // ====================
+  // /SETUP TICKET
+  // ====================
+
+  if (
+    interaction.commandName === "setup" &&
+    interaction.options.getSubcommand() === "ticket"
+  ) {
+    const member = interaction.member;
+
+    const isOwnerOrCoOwner = member?.roles?.cache?.some(role =>
+      role.name === "👑・Owner" ||
+      role.name === "⚜️・Co-Owner"
+    );
+
+    if (!isOwnerOrCoOwner) {
+      await interaction.reply({
+        content: "❌ Only the Owner or Co-Owner can set up tickets.",
+        ephemeral: true
+      });
+      return;
+    }
+
+        const ticketButton = new ButtonBuilder()
+      .setCustomId("open_ticket")
+      .setLabel("Open Ticket")
+      .setEmoji("🎫")
+      .setStyle(ButtonStyle.Primary);
+
+    const row = new ActionRowBuilder()
+      .addComponents(ticketButton);
+
+    const embed = new EmbedBuilder()
+      .setTitle("🎫 Thundra SMP Support")
+      .setDescription(
+        "Need help? Click **Open Ticket** below to create a private support ticket.\n\n" +
+        "Please only open a ticket if you actually need support."
+      );
+
+    await interaction.channel.send({
+      embeds: [embed],
+      components: [row]
+    });
+
+    await interaction.reply({
+      content: "✅ Ticket panel has been set up!",
+      ephemeral: true
+    });
+
+     return;
+  }
+
+    // ====================
+  // OPEN TICKET BUTTON
+  // ====================
+
+  if (interaction.isButton() && interaction.customId === "open_ticket") {
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId("ticket_reason")
+      .setPlaceholder("Choose what you need support for...")
+      .addOptions(
+        {
+          label: "Report Player",
+          description: "Report a player for breaking the rules.",
+          value: "report_player",
+          emoji: "🚩"
+        },
+        {
+          label: "Ban Appeal",
+          description: "Appeal a ban from Thundra SMP.",
+          value: "ban_appeal",
+          emoji: "📝"
+        },
+        {
+          label: "Report Bug or Exploit",
+          description: "Report a bug or exploit.",
+          value: "report_bug",
+          emoji: "🛠️"
+        }
+      );
+
+    const row = new ActionRowBuilder()
+      .addComponents(menu);
+
+    await interaction.reply({
+      content: "**What do you need support for?**",
+      components: [row],
+      ephemeral: true
+    });
+
+    return;
+  }
+
+    // ====================
+  // TICKET REASON SELECT
+  // ====================
+
+  if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId === "ticket_reason"
+  ) {
+    const reason = interaction.values[0];
+
+    const proofMenu = new StringSelectMenuBuilder()
+      .setCustomId(`ticket_proof_${reason}`)
+      .setPlaceholder("Do you have proof?")
+      .addOptions(
+        {
+          label: "Yes, I do",
+          description: "I have screenshots or a video.",
+          value: "yes",
+          emoji: "✅"
+        },
+        {
+          label: "No, I don't",
+          description: "I don't have screenshots or a video.",
+          value: "no",
+          emoji: "❌"
+        }
+      );
+
+    const row = new ActionRowBuilder()
+      .addComponents(proofMenu);
+
+    await interaction.update({
+      content: "**Do you have proof? Screenshots or video?**",
+      components: [row]
+    });
+
+    return;
+  }
+
+    // ====================
+  // TICKET PROOF SELECT
+  // ====================
+
+  if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId.startsWith("ticket_proof_")
+  ) {
+    const proof = interaction.values[0];
+    const reason = interaction.customId.replace("ticket_proof_", "");
+
+    const modal = new ModalBuilder()
+      .setCustomId(`ticket_name_${reason}_${proof}`)
+      .setTitle("🎫 Ticket Information");
+
+    const usernameInput = new TextInputBuilder()
+      .setCustomId("minecraft_username")
+      .setLabel("What is your in-game name?")
+      .setPlaceholder("Enter your Minecraft username")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setMaxLength(32);
+
+    const row = new ActionRowBuilder()
+      .addComponents(usernameInput);
+
+    modal.addComponents(row);
+
+    await interaction.showModal(modal);
+
+    return;
+  }
+
+    // ====================
+  // TICKET NAME MODAL
+  // ====================
+
+  if (
+    interaction.isModalSubmit() &&
+    interaction.customId.startsWith("ticket_name_")
+  ) {
+    const parts = interaction.customId.split("_");
+
+    const reason = parts[2];
+    const proof = parts[3];
+
+    const minecraftUsername =
+      interaction.fields.getTextInputValue("minecraft_username");
+
+    const reasonNames = {
+      report_player: "🚩 Report Player",
+      ban_appeal: "📝 Ban Appeal",
+      report_bug: "🛠️ Report Bug or Exploit"
+    };
+
+    const proofText = proof === "yes"
+      ? "✅ Yes, I have proof."
+      : "❌ No, I don't have proof.";
+
+    const guild = interaction.guild;
+
+    const existingTicket = guild.channels.cache.find(
+      channel =>
+        channel.name === `ticket-${interaction.user.username.toLowerCase()}` &&
+        channel.type === ChannelType.GuildText
+    );
+
+    if (existingTicket) {
+      await interaction.reply({
+        content: `❌ You already have an open ticket: ${existingTicket}`,
+        ephemeral: true
+      });
+      return;
+    }
+
+    const ticketChannel = await guild.channels.create({
+  name: `ticket-${interaction.user.username}`,
+  type: ChannelType.GuildText,
+  parent: "1537888242119082146",
+  permissionOverwrites: [
+    {
+          id: guild.roles.everyone.id,
+          deny: [PermissionFlagsBits.ViewChannel]
+        },
+        {
+          id: interaction.user.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory
+          ]
+        },
+        {
+          id: guild.roles.cache.find(
+            role => role.name === "👑・Owner"
+          )?.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory
+          ]
+        },
+        {
+          id: guild.roles.cache.find(
+            role => role.name === "⚜️・Co-Owner"
+          )?.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory
+          ]
+        },
+        {
+          id: guild.roles.cache.find(
+            role => role.name === "🛡️・Admin"
+          )?.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory
+          ]
+        }
+      ].filter(permission => permission.id)
+    });
+
+    const ticketEmbed = new EmbedBuilder()
+      .setTitle("🎫 Thundra SMP Support Ticket")
+      .addFields(
+        {
+          name: "👤 User",
+          value: `${interaction.user}`,
+          inline: true
+        },
+        {
+          name: "🎮 In-Game Name",
+          value: minecraftUsername,
+          inline: true
+        },
+        {
+          name: "📌 Reason",
+          value: reasonNames[reason] || "Unknown",
+          inline: false
+        },
+        {
+          name: "📸 Proof",
+          value: proofText,
+          inline: false
+        }
+      )
+      .setDescription(
+        "A staff member will be with you shortly.\n\n" +
+        "Please provide any additional information or proof here."
+      );
+
+ const closeButton = new ButtonBuilder()
+  .setCustomId("close_ticket")
+  .setLabel("Close Ticket")
+  .setEmoji("🔒")
+  .setStyle(ButtonStyle.Danger);
+
+const closeRow = new ActionRowBuilder()
+  .addComponents(closeButton);
+
+await ticketChannel.send({
+  content: `${interaction.user} <@&${guild.roles.cache.find(
+    role => role.name === "🛡️・Admin"
+  )?.id || ""}>`,
+  embeds: [ticketEmbed],
+  components: [closeRow]
+});
+
+    await interaction.reply({
+      content: `✅ Your ticket has been created: ${ticketChannel}`,
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  // ====================
+// CLOSE TICKET
+// ====================
+
+// ====================
+// CLOSE TICKET
+// ====================
+
+if (
+  interaction.isButton() &&
+  interaction.customId === "close_ticket"
+) {
+  const member = interaction.member;
+
+  const canCloseTicket = member?.roles?.cache?.some(role =>
+    role.name === "👑・Owner" ||
+    role.name === "⚜️・Co-Owner" ||
+    role.name === "🛡️・Admin"
+  );
+
+  if (!canCloseTicket) {
+    await interaction.reply({
+      content: "❌ Only Admins, Co-Owners, and Owners can close tickets.",
+      ephemeral: true
+    });
+    return;
+  }
+
+  const confirmButton = new ButtonBuilder()
+    .setCustomId("confirm_close_ticket")
+    .setLabel("Yes, Close")
+    .setEmoji("🔒")
+    .setStyle(ButtonStyle.Danger);
+
+  const cancelButton = new ButtonBuilder()
+    .setCustomId("cancel_close_ticket")
+    .setLabel("Cancel")
+    .setEmoji("❌")
+    .setStyle(ButtonStyle.Secondary);
+
+  const row = new ActionRowBuilder()
+    .addComponents(confirmButton, cancelButton);
+
+  await interaction.reply({
+    content: "⚠️ **Are you sure you want to close this ticket?**",
+    components: [row]
+  });
+
+  return;
+}
+
+// ====================
+// CONFIRM CLOSE TICKET
+// ====================
+
+if (
+  interaction.isButton() &&
+  interaction.customId === "confirm_close_ticket"
+) {
+  const member = interaction.member;
+
+  const canCloseTicket = member?.roles?.cache?.some(role =>
+    role.name === "👑・Owner" ||
+    role.name === "⚜️・Co-Owner" ||
+    role.name === "🛡️・Admin"
+  );
+
+  if (!canCloseTicket) {
+    await interaction.reply({
+      content: "❌ Only Admins, Co-Owners, and Owners can close tickets.",
+      ephemeral: true
+    });
+    return;
+  }
+
+  await interaction.update({
+    content: "🔒 **Ticket closing in 5 seconds...**",
+    components: []
+  });
+
+  setTimeout(async () => {
+    try {
+      await interaction.channel.delete();
+    } catch (error) {
+      console.error("Failed to close ticket:", error);
+    }
+  }, 5000);
+
+  return;
+}
+
+// ====================
+// CANCEL CLOSE TICKET
+// ====================
+
+if (
+  interaction.isButton() &&
+  interaction.customId === "cancel_close_ticket"
+) {
+  await interaction.update({
+    content: "✅ Ticket close cancelled.",
+    components: []
+  });
+
+  return;
+}
   // ====================
   // COMMAND LOGGING
   // ====================
