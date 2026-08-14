@@ -48,6 +48,33 @@ const client = new Client({
 });
 
 // ====================
+// DISCORD CONNECTION DEBUG
+// ====================
+
+client.on("clientReady", () => {
+  console.log(`✅ Discord connected as ${client.user.tag}`);
+});
+
+client.on("shardDisconnect", (event, shardId) => {
+  console.log(`🔴 Discord disconnected. Shard: ${shardId}`, event.code);
+});
+
+client.on("shardReconnecting", (shardId) => {
+  console.log(`🟡 Discord reconnecting. Shard: ${shardId}`);
+});
+
+client.on("shardResume", (shardId, replayedEvents) => {
+  console.log(`🟢 Discord connection resumed. Shard: ${shardId}`);
+});
+
+process.on("unhandledRejection", error => {
+  console.error("❌ Unhandled Promise Rejection:", error);
+});
+
+process.on("uncaughtException", error => {
+  console.error("❌ Uncaught Exception:", error);
+});
+// ====================
 // SETTINGS
 // ====================
 
