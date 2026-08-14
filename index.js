@@ -932,60 +932,65 @@ client.on("interactionCreate", async interaction => {
     return;
   }
 
-  if (!interaction.isChatInputCommand()) return;
-
-  // ====================
-  // /SETUP TICKET
-  // ====================
-
   if (
-    interaction.commandName === "setup" &&
-    interaction.options.getSubcommand() === "ticket"
-  ) {
-    const member = interaction.member;
+  !interaction.isChatInputCommand() &&
+  !interaction.isButton() &&
+  !interaction.isStringSelectMenu() &&
+  !interaction.isModalSubmit()
+) return;
 
-    const isOwnerOrCoOwner = member?.roles?.cache?.some(role =>
-      role.name === "👑・Owner" ||
-      role.name === "⚜️・Co-Owner"
-    );
+ // ====================
+// /SETUP TICKET
+// ====================
 
-    if (!isOwnerOrCoOwner) {
-      await interaction.reply({
-        content: "❌ Only the Owner or Co-Owner can set up tickets.",
-        ephemeral: true
-      });
-      return;
-    }
+if (
+  interaction.isChatInputCommand() &&
+  interaction.commandName === "setup" &&
+  interaction.options.getSubcommand() === "ticket"
+) {
+  const member = interaction.member;
 
-        const ticketButton = new ButtonBuilder()
-      .setCustomId("open_ticket")
-      .setLabel("Open Ticket")
-      .setEmoji("🎫")
-      .setStyle(ButtonStyle.Primary);
+  const isOwnerOrCoOwner = member?.roles?.cache?.some(role =>
+    role.name === "👑・Owner" ||
+    role.name === "⚜️・Co-Owner"
+  );
 
-    const row = new ActionRowBuilder()
-      .addComponents(ticketButton);
-
-    const embed = new EmbedBuilder()
-      .setTitle("🎫 Thundra SMP Support")
-      .setDescription(
-        "Need help? Click **Open Ticket** below to create a private support ticket.\n\n" +
-        "Please only open a ticket if you actually need support."
-      );
-
-    await interaction.channel.send({
-      embeds: [embed],
-      components: [row]
-    });
-
+  if (!isOwnerOrCoOwner) {
     await interaction.reply({
-      content: "✅ Ticket panel has been set up!",
+      content: "❌ Only the Owner or Co-Owner can set up tickets.",
       ephemeral: true
     });
-
-     return;
+    return;
   }
 
+  const ticketButton = new ButtonBuilder()
+    .setCustomId("open_ticket")
+    .setLabel("Open Ticket")
+    .setEmoji("🎫")
+    .setStyle(ButtonStyle.Primary);
+
+  const row = new ActionRowBuilder()
+    .addComponents(ticketButton);
+
+  const embed = new EmbedBuilder()
+    .setTitle("🎫 Thundra SMP Support")
+    .setDescription(
+      "Need help? Click **Open Ticket** below to create a private support ticket.\n\n" +
+      "Please only open a ticket if you actually need support."
+    );
+
+  await interaction.channel.send({
+    embeds: [embed],
+    components: [row]
+  });
+
+  await interaction.reply({
+    content: "✅ Ticket panel has been set up!",
+    ephemeral: true
+  });
+
+  return;
+}
     // ====================
   // OPEN TICKET BUTTON
   // ====================
