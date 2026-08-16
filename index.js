@@ -703,11 +703,22 @@ function isIQQuestion(text) {
 // DISCORD READY
 // ====================
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log("Logged in as " + client.user.tag);
   console.log("Thundra Bot is online.");
 
-  client.user.setActivity("Thundra SMP", { type: 0 });
+  client.user.setPresence({
+    status: "online",
+    activities: [
+      {
+        name: "Thundra SMP",
+        type: 0
+      }
+    ]
+  });
+  console.log("Logged in as " + client.user.tag);
+  console.log("Thundra Bot is online.");
+
 
   const commands = [
     new SlashCommandBuilder()
