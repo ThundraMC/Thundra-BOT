@@ -29,12 +29,7 @@ const PORT = process.env.PORT || 3000;
 app.get("/", (req, res) => {
   res.send("Thundra Bot is online!");
 });
-
-app.listen(PORT, () => {
-  console.log("Web server running on port " + PORT);
-});
-
-// ====================
+===
 // DISCORD CLIENT
 // ====================
 
@@ -702,11 +697,21 @@ function isIQQuestion(text) {
 // ====================
 // DISCORD READY
 // ====================
-
 client.once("clientReady", async () => {
   console.log("Logged in as " + client.user.tag);
   console.log("Thundra Bot is online.");
 
+  client.user.setPresence({
+    status: "online",
+    activities: [
+      {
+        name: "Thundra SMP",
+        type: 0
+      }
+    ]
+  });
+
+  console.log("Bot status:", client.presence?.status);
   client.user.setPresence({
     status: "online",
     activities: [
